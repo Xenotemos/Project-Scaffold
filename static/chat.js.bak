@@ -1,0 +1,174 @@
+const form = document.getElementById("chat-form");
+const input = document.getElementById("input");
+const messages = document.getElementById("messages");
+const moodEl = document.getElementById("mood");
+const hormoneEl = document.getElementById("hormone-status");
+const stimulusEl = document.getElementById("stimulus");
+const engineEl = document.getElementById("engine-status");
+
+function formatTime(date) {
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function addMessage(text, role = "system", meta) {
+  const line = document.createElement("div");
+  line.className = `line ${role}`;
+
+  const timestamp = document.createElement("span");
+  timestamp.className = "timestamp";
+  timestamp.textContent = formatTime(new Date());
+
+  const prompt = document.createElement("span");
+  prompt.className = "prompt";
+  prompt.textContent =
+    role === "user" ? "you>" : role === "ai" ? "ai>" : "sys>";
+
+  const body = document.createElement("span");
+  body.className = "body";
+  body.textContent = text.trim();
+
+  line.append(timestamp, prompt, body);
+
+  if (meta) {
+    const metaEl = document.createElement("span");
+    metaEl.className = "meta";
+    metaEl.textContent = meta;
+    line.append(metaEl);
+  }
+
+  messages.append(line);
+  messages.scrollTo({
+    top: messages.scrollHeight,
+    behavior: "smooth",
+  });
+  return line;
+}
+
+function summariseHormones(hormones) {
+  if (!hormones) return "--";
+  const keys = ["dopamine", "serotonin", "cortisol", "oxytocin"];
+  const segments = keys
+    .map((key) => {
+      const value = hormones[key];
+      if (typeof value !== "number") return null;
+      const label = key.slice(0, 3);
+      return `${label}:${Math.round(value)}`;
+    })
+    .filter(Boolean);
+  return segments.length ? segments.join(" ") : "--";
+}
+
+function renderTelemetry(state) {
+  if (!state) return;
+  if (state.mood && moodEl) {
+    moodEl.textContent = state.mood;
+  }
+  if (state.hormones && hormoneEl) {
+    hormoneEl.textContent = `hormones: ${summariseHormones(state.hormones)}`;
+  }
+}
+
+function renderEngineStatus(result) {
+  if (!engineEl) return;
+  if (!result) {
+    engineEl.textContent = "engine: offline";
+    return;
+  }
+  const source = result.source ?? "unknown";
+  const parts = [`engine: ${source}`];
+  const timings = result.llm?.timings;
+  const usage = result.llm?.usage;
+  if (usage?.total_tokens) {
+    parts.push(`${usage.total_tokens} tok`);
+  }
+  if (timings?.predicted_ms) {
+    parts.push(`${Math.round(timings.predicted_ms)} ms`);
+  }
+  if (timings?.predicted_per_second) {
+    parts.push(`${timings.predicted_per_second.toFixed(1)} tok/s`);
+  }
+  engineEl.textContent = parts.join(" • ");
+}
+
+async function fetchState() {
+  try {
+    const res = await fetch("/state");
+    if (!res.ok) return;
+    const state = await res.json();
+    renderTelemetry(state);
+  } catch (error) {
+    console.error("Failed to fetch state", error);
+  }
+}
+
+function computeMeta({ source, llm }) {
+  const parts = [];
+  if (source) parts.push(`engine:${source}`);
+  const tokens = llm?.usage?.total_tokens;
+  if (tokens) parts.push(`${tokens} tok`);
+  const latency = llm?.timings?.predicted_ms;
+  if (latency) parts.push(`${Math.round(latency)} ms`);
+  const tps = llm?.timings?.predicted_per_second;
+  if (tps) parts.push(`${tps.toFixed(1)} tok/s`);
+  return parts.join(" • ");
+}
+
+async function sendMessage(event) {
+  event.preventDefault();
+  const message = input.value.trim();
+  const stimulus = stimulusEl.value || "";
+  if (!message) return;
+
+  const meta = stimulus ? `stimulus:${stimulus}` : undefined;
+  addMessage(message, "user", meta);
+
+  input.value = "";
+  input.focus();
+
+  const payload = { message, stimulus: stimulus || null };
+  try {
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      addMessage(`error: ${detail}`, "system");
+      return;
+    }
+    const data = await res.json();
+    const metaLine = computeMeta(data);
+    addMessage(data.reply ?? "(no response)", "ai", metaLine || undefined);
+    if (data.state) {
+      renderTelemetry(data.state);
+    }
+    renderEngineStatus(data);
+  } catch (error) {
+    console.error(error);
+    addMessage("connection error. check console for details.", "system");
+    renderEngineStatus(null);
+  }
+}
+
+form.addEventListener("submit", sendMessage);
+
+input.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    if (typeof form.requestSubmit === "function") {
+      form.requestSubmit();
+    } else {
+      form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+    }
+  }
+});
+
+addMessage("session online. say hello to begin.", "system");
+fetchState();
+renderEngineStatus(null);
+setInterval(fetchState, 8000);

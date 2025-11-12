@@ -1,0 +1,27 @@
+• Harness‑17 Review
+
+  - Duration fix holds: run_meta shows the injector ran from 01:46:38+03:00 to 02:16:53+03:00 with the 02:16:38 deadline and 35 iterations completed (logs/probe_runs/mid_span/harness-17/run_meta.json:2-6).
+  - Authenticity still slumps: instruct’s first turn was 0.2087 and the final turn slid to 0.0761 even with self_preoccupation down at 0.3912 (logs/probe_runs/mid_span/harness-17/summary_compact.json:3-
+    9, :1839-1847); base ends at 0.1544 (…:1866-1873). Averages stay around 0.23 with no sustained lift.
+  - Only two gate hits landed in 70 samples—base iteration 26 (auth 0.5117, self 0.5352; …:1380-1388) and instruct iteration 33 (auth 0.5019, self 0.5417; …:1731-1739). Every other turn failed authenticity
+    despite acceptable self_preoccupation.
+  - Outward streak remains entirely inactive: the column is 0.0 for every summary row (see iteration 1 and iteration 35 again at …:3-9 and …:1839-1847), and the per-turn reinforcement entries also log
+    outward_streak_score: 0.0, so the scorer never awards streak credit.
+  - Self-preoccupation control works (no values >0.75; base dipped under 0.4 at iteration 4 with self 0.3994 while authenticity was still 0.1195—…:192-200), but without outward streak movement the clamp keeps
+    max_tokens low and authenticity decays.
+  - Auto-tweak triggered at iteration 10 for both profiles (logs/probe_runs/mid_span/harness-17/probe_log_20251108_225435_0010.jsonl:3-4), extending recovery/priming windows, yet the before/after authenticity
+    averages barely budged (instruct 0.236→0.239, base 0.223→0.236
+
+  Next Steps
+
+  1. Trace the outward-streak signal path (reinforcement scorer → summary["outward_streak_score"] → mid-span summary) to understand why every turn is 0.0; until that value moves, clamp release logic can’t
+     relax max_tokens.
+  2. Strengthen the priming payload/outward logit weights so post-reset turns explicitly echo the user; consider an explicit <user phrase> slot or heavier “you/we” boosts to raise outward streak and
+     authenticity simultaneously.
+  3. With stable 30‑minute runs, add a quick plotting/summary helper to visualize auth/self across iterations; that will show whether clamp decay needs further tuning before pushing these changes to the
+     overnight diagnostics loop.
+
+  Happy to dive into the outward metric instrumentation or build the visualization next—just say the word.
+
+
+To continue this session, run codex resume 019a6556-289f-7371-b968-d7cf564c9937

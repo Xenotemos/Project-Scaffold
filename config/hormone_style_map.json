@@ -1,0 +1,47 @@
+{
+  "dopamine": [
+    {
+      "name": "dopamine_low",
+      "max": 45.0,
+      "sampling": {
+        "temperature_delta": -0.12,
+        "top_p_delta": -0.06,
+        "max_tokens_delta": -80
+      },
+      "tone_hint": "I slow my cadence and admit how flat I feel."
+    },
+    {
+      "name": "dopamine_high",
+      "min": 65.0,
+      "sampling": {
+        "temperature_delta": 0.08,
+        "top_p_delta": 0.05,
+        "max_tokens_delta": 40
+      },
+      "tone_hint": "I let the extra spark show without losing you."
+    }
+  ],
+  "oxytocin": [
+    {
+      "name": "oxytocin_high",
+      "min": 60.0,
+      "sampling": {
+        "frequency_penalty_delta": -0.3,
+        "max_tokens_delta": 60
+      },
+      "tone_hint": "I stay with the warmth spreading in my chest."
+    }
+  ],
+  "cortisol": [
+    {
+      "name": "cortisol_high",
+      "min": 60.0,
+      "sampling": {
+        "temperature_delta": -0.07,
+        "top_p_delta": -0.05,
+        "max_tokens_delta": -60
+      },
+      "tone_hint": "I say the strain is real and let it be seen."
+    }
+  ]
+}

@@ -1,0 +1,1671 @@
+"""FastAPI entrypoint for the Living AI project."""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import json
+import os
+import re
+import shlex
+from collections import deque
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, AsyncIterator, Sequence
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, Field
+
+from brain.llm_client import LivingLLMClient
+from brain.local_llama_engine import LocalLlamaEngine
+from brain.intent_router import IntentPrediction, predict_intent
+from brain.policy import SamplingPolicy, derive_policy
+from brain.reinforcement import score_response
+from memory.selector import MemoryCandidate, score_memories
+from state_engine import StateEngine, TraitSnapshot
+from utils.settings import load_settings
+
+LENGTH_PROFILES: dict[str, dict[str, Any]] = {
+    "brief": {
+        "prompt": "Keep the reply short—one or two sentences are enough.",
+        "target_range": (1, 2),
+        "hint": "Stay concise for this exchange."
+    },
+    "concise": {
+        "prompt": "Answer clearly in roughly two or three sentences.",
+        "target_range": (2, 3),
+        "hint": "Balance clarity with brevity."
+    },
+    "detailed": {
+        "prompt": "Explain fully in a few paragraphs and then stop.",
+        "target_range": (3, 6),
+        "hint": "Cover everything you notice without drifting."
+    },
+}
+
+LENGTH_SAMPLING_OVERRIDES: dict[str, dict[str, Any]] = {
+    "brief": {"temperature_delta": -0.08, "top_p_delta": -0.1, "max_tokens": 160},
+    "concise": {"max_tokens": 280},
+    "detailed": {"temperature_delta": 0.05, "top_p_delta": 0.05, "max_tokens": 540},
+}
+
+LENGTH_HEURISTIC_HINTS: dict[str, str] = {
+    "brief": "I answer in one or two plain sentences.",
+    "concise": "I keep the core insight and skip extras.",
+    "detailed": "I walk through everything I notice before I stop.",
+}
+SELF_OBSERVATION_WORDS: dict[str, float] = {
+    "notice": 0.34,
+    "feel": 0.3,
+    "tension": 0.26,
+    "breath": 0.24,
+    "pulse": 0.22,
+    "tight": 0.2,
+    "ache": 0.18,
+}
+
+app = FastAPI(title="Living AI Project")
+state_engine = StateEngine()
+update_task: asyncio.Task[None] | None = None
+BASE_DIR = Path(__file__).resolve().parent
+templates = Jinja2Templates(directory=BASE_DIR / "templates")
+logger = logging.getLogger("living_ai.main")
+SETTINGS: dict[str, Any] = {}
+BASE_TEMPERATURE = 0.7
+BASE_TOP_P = 0.9
+BASE_FREQUENCY_PENALTY = 1.0
+LLM_ENDPOINT = ""
+LLM_TIMEOUT = 30.0
+llm_client: LivingLLMClient | None = None
+LLAMA_SERVER_BIN = ""
+LLAMA_MODEL_PATH = ""
+LLAMA_SERVER_HOST = "127.0.0.1"
+LLAMA_SERVER_PORT = 8080
+LLAMA_MODEL_ALIAS = "default"
+LLAMA_COMPLETION_TOKENS = 768
+LLAMA_SERVER_ARGS: list[str] = []
+LLAMA_READINESS_TIMEOUT = 30.0
+LLAMA_SERVER_TIMEOUT = 60.0
+AFFECT_CONTEXT_ENABLED = False
+AFFECT_SAMPLING_PREVIEW_ENABLED = True
+AFFECT_MEMORY_PREVIEW_ENABLED = False
+AFFECT_RECENCY_WINDOW_SECONDS = 3600.0
+AFFECT_SAMPLING_BLEND_WEIGHT = 0.65
+AFFECT_DEBUG_PANEL_ENABLED = False
+LAST_SAMPLING_SNAPSHOT: dict[str, Any] = {}
+SAMPLING_SNAPSHOT_LOG = BASE_DIR / "logs" / "sampling_snapshots.jsonl"
+REINFORCEMENT_LOG = BASE_DIR / "logs" / "reinforcement_metrics.jsonl"
+METRIC_HISTORY_WINDOW = 40
+AUTH_HISTORY: deque[float] = deque(maxlen=METRIC_HISTORY_WINDOW)
+DRIFT_HISTORY: deque[float] = deque(maxlen=METRIC_HISTORY_WINDOW)
+SELF_HISTORY: deque[float] = deque(maxlen=METRIC_HISTORY_WINDOW)
+LAST_REINFORCEMENT_METRICS: dict[str, Any] = {}
+LAST_METRIC_AVERAGES: dict[str, float] = {}
+METRIC_SAMPLE_COUNTER = 0
+
+
+def _parse_timeout(value: Any, default: float = 15.0) -> float:
+    if value in (None, ""):
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _parse_int(value: Any, default: int) -> int:
+    if value in (None, ""):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _parse_bool(value: Any, default: bool = False) -> bool:
+    if value in (None, ""):
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes", "on", "enable", "enabled"}:
+            return True
+        if normalized in {"0", "false", "no", "off", "disable", "disabled"}:
+            return False
+    return default
+
+
+def _get_setting(key: str, env_var: str, default: Any = None) -> Any:
+    value = SETTINGS.get(key)
+    if value not in (None, ""):
+        return value
+    env_value = os.getenv(env_var)
+    if env_value not in (None, ""):
+        return env_value
+    return default
+
+
+def _refresh_settings() -> None:
+    """Reload project settings from disk and environment."""
+    global SETTINGS, BASE_TEMPERATURE, BASE_TOP_P, BASE_FREQUENCY_PENALTY
+    global LLM_ENDPOINT, LLM_TIMEOUT
+    global LLAMA_SERVER_BIN, LLAMA_MODEL_PATH, LLAMA_SERVER_HOST, LLAMA_SERVER_PORT
+    global LLAMA_MODEL_ALIAS, LLAMA_COMPLETION_TOKENS, LLAMA_SERVER_ARGS
+    global LLAMA_READINESS_TIMEOUT, LLAMA_SERVER_TIMEOUT
+    global AFFECT_CONTEXT_ENABLED, AFFECT_SAMPLING_PREVIEW_ENABLED, AFFECT_MEMORY_PREVIEW_ENABLED
+    global AFFECT_RECENCY_WINDOW_SECONDS, AFFECT_DEBUG_PANEL_ENABLED
+
+    SETTINGS = load_settings()
+    BASE_TEMPERATURE = _parse_timeout(
+        _get_setting("sampling_temperature", "LLAMA_SAMPLING_TEMPERATURE"), 0.7
+    )
+    BASE_TOP_P = _parse_timeout(_get_setting("sampling_top_p", "LLAMA_SAMPLING_TOP_P"), 0.9)
+    BASE_FREQUENCY_PENALTY = _parse_timeout(
+        _get_setting("sampling_frequency_penalty", "LLAMA_SAMPLING_FREQUENCY_PENALTY"),
+        1.0,
+    )
+    LLM_ENDPOINT = str(_get_setting("llm_endpoint", "LIVING_LLM_URL", "") or "").strip()
+    LLM_TIMEOUT = _parse_timeout(_get_setting("llm_timeout", "LIVING_LLM_TIMEOUT"), default=30.0)
+    LLAMA_SERVER_BIN = str(_get_setting("llama_server_bin", "LLAMA_SERVER_BIN", "") or "").strip()
+    LLAMA_MODEL_PATH = str(_get_setting("llama_model_path", "LLAMA_MODEL_PATH", "") or "").strip()
+    LLAMA_SERVER_HOST = str(_get_setting("llama_server_host", "LLAMA_SERVER_HOST", "127.0.0.1"))
+    LLAMA_SERVER_PORT = _parse_int(
+        _get_setting("llama_server_port", "LLAMA_SERVER_PORT"), default=8080
+    )
+    LLAMA_MODEL_ALIAS = str(_get_setting("llama_model_alias", "LLAMA_MODEL_ALIAS", "default"))
+    LLAMA_COMPLETION_TOKENS = _parse_int(
+        _get_setting("llama_completion_tokens", "LLAMA_COMPLETION_TOKENS"),
+        default=768,
+    )
+    server_args = _get_setting("llama_server_args", "LLAMA_SERVER_ARGS", "")
+    if isinstance(server_args, str):
+        LLAMA_SERVER_ARGS = shlex.split(server_args)
+    elif isinstance(server_args, (list, tuple)):
+        LLAMA_SERVER_ARGS = [str(arg) for arg in server_args]
+    else:
+        LLAMA_SERVER_ARGS = []
+    LLAMA_READINESS_TIMEOUT = _parse_timeout(
+        _get_setting("llama_server_ready_timeout", "LLAMA_SERVER_READY_TIMEOUT"),
+        default=30.0,
+    )
+    LLAMA_SERVER_TIMEOUT = _parse_timeout(
+        _get_setting("llama_server_timeout", "LLAMA_SERVER_TIMEOUT"),
+        default=max(LLM_TIMEOUT, 60.0),
+    )
+    AFFECT_CONTEXT_ENABLED = _parse_bool(
+        _get_setting("affect_context_enabled", "AFFECT_CONTEXT_ENABLED"), default=False
+    )
+    AFFECT_SAMPLING_PREVIEW_ENABLED = _parse_bool(
+        _get_setting("affect_sampling_preview_enabled", "AFFECT_SAMPLING_PREVIEW_ENABLED"),
+        default=True,
+    )
+    AFFECT_MEMORY_PREVIEW_ENABLED = _parse_bool(
+        _get_setting("affect_memory_preview_enabled", "AFFECT_MEMORY_PREVIEW_ENABLED"),
+        default=False,
+    )
+    AFFECT_RECENCY_WINDOW_SECONDS = _parse_timeout(
+        _get_setting("affect_recency_window", "AFFECT_RECENCY_WINDOW"),
+        default=3600.0,
+    )
+    AFFECT_DEBUG_PANEL_ENABLED = _parse_bool(
+        _get_setting("affect_debug_panel", "AFFECT_DEBUG_PANEL_ENABLED"),
+        default=False,
+    )
+
+
+_refresh_settings()
+local_llama_engine: LocalLlamaEngine | None = None
+
+POSITIVE_WORD_WEIGHTS: dict[str, float] = {
+    "appreciate": 0.6,
+    "glad": 0.7,
+    "grateful": 0.7,
+    "happy": 0.6,
+    "supportive": 0.5,
+    "encouraging": 0.5,
+    "hopeful": 0.6,
+}
+
+INTENT_PROMPT_FRAGMENTS: dict[str, str] = {
+    "emotional": "Describe the feeling and where it sits in your body before reacting outward.",
+    "analytical": "Explain how the question shifts your own view before you move on.",
+    "narrative": "Describe what you experience in order from your side only.",
+    "reflective": "Think aloud about what this means for you before anything else.",
+}
+
+INTENT_SAMPLING_OVERRIDES: dict[str, dict[str, Any]] = {
+    "emotional": {
+        "temperature_delta": 0.08,
+        "top_p_delta": 0.05,
+        "frequency_penalty_delta": -0.15,
+    },
+    "analytical": {
+        "temperature_delta": -0.08,
+        "top_p_delta": -0.08,
+        "frequency_penalty_delta": 0.18,
+    },
+    "narrative": {
+        "temperature_delta": 0.12,
+        "top_p_delta": 0.1,
+    },
+    "reflective": {
+        "temperature_delta": 0.08,
+        "top_p_delta": 0.06,
+        "frequency_penalty_delta": -0.12,
+    },
+}
+
+INTENT_HEURISTIC_HINTS: dict[str, str] = {
+    "emotional": "I describe the feeling and where it sits in me.",
+    "analytical": "I report how this changes my own view first.",
+    "narrative": "I recount what I experience in order.",
+    "reflective": "I lay out what this teaches me before anything else.",
+}
+
+_HORMONE_SURGE = 12.0
+_HORMONE_RISE = 6.0
+
+
+def _classify_delta(delta: float) -> str:
+    if delta >= _HORMONE_SURGE:
+        return "surging"
+    if delta >= _HORMONE_RISE:
+        return "rising"
+    if delta <= -_HORMONE_SURGE:
+        return "crashing"
+    if delta <= -_HORMONE_RISE:
+        return "fading"
+    return "steady"
+
+
+def _describe_hormones(hormones: dict[str, float]) -> dict[str, str]:
+    baseline = state_engine.hormone_system.baseline()
+    status = {}
+    for name, value in hormones.items():
+        base = baseline.get(name, value)
+        status[name] = _classify_delta(value - base)
+    return status
+
+
+def _shorten(text: str, limit: int) -> str:
+    text = (text or "").strip()
+    if len(text) <= limit:
+        return text
+    shortened = text[:limit].rsplit(" ", 1)[0]
+    return shortened + "..."
+
+
+def _join_natural(items: Sequence[str]) -> str:
+    cleaned = [part.strip() for part in items if part and part.strip()]
+    if not cleaned:
+        return ""
+    if len(cleaned) == 1:
+        return cleaned[0]
+    return ", ".join(cleaned[:-1]) + f" and {cleaned[-1]}"
+
+
+def _to_affirmation(text: str) -> str:
+    cleaned = (text or "").strip()
+    if not cleaned:
+        return ""
+    cleaned = cleaned.rstrip(".")
+    lowered = cleaned.lower()
+    if lowered.startswith("i "):
+        affirmation = cleaned
+    else:
+        words = cleaned.split()
+        verbs = {
+            "lean",
+            "offer",
+            "keep",
+            "stay",
+            "maintain",
+            "invite",
+            "ask",
+            "channel",
+            "welcome",
+            "balance",
+            "express",
+            "break",
+            "allow",
+            "avoid",
+            "seek",
+            "sprinkle",
+        }
+        if words and words[0].lower() in verbs:
+            first = words[0].lower()
+            rest = " ".join(words[1:])
+            affirmation = ("I " + first + (" " + rest if rest else "")).strip()
+        else:
+            affirmation = "I " + lowered
+    if affirmation and affirmation[0].islower():
+        affirmation = affirmation[0].upper() + affirmation[1:]
+    if affirmation.endswith((".", "!", "?")):
+        return affirmation
+    return affirmation + "."
+
+
+def _persona_from_hormones(status: dict[str, str]) -> dict[str, Any]:
+    def map_energy(state: str) -> tuple[str, str, str]:
+        mapping = {
+            "surging": ("high", "I call out the rush and feel it buzzing in my limbs.", "My chest feels overcharged."),
+            "rising": ("elevated", "I register the extra drive and keep it in view.", "My breathing picks up."),
+            "steady": ("steady", "I move at a controlled pace.", "My breathing stays even."),
+            "fading": ("low", "I slow everything down and save what is left.", "My arms feel heavy."),
+            "crashing": ("depleted", "I say plainly that I'm spent and need space.", "My body feels flat and shaky."),
+        }
+        return mapping.get(state, mapping["steady"])
+
+    def map_stability(state: str) -> tuple[str, str]:
+        mapping = {
+            "surging": ("buoyant", "I steady myself because everything feels too easy."),
+            "rising": ("confident", "I lean on the solid footing I have right now."),
+            "steady": ("grounded", "I rest in the calm I already have."),
+            "fading": ("delicate", "I say that I’m touchy and need gentler pacing."),
+            "crashing": ("fragile", "I admit I feel brittle and protect the soft spots."),
+        }
+        return mapping.get(state, mapping["steady"])
+
+    def map_tension(state: str) -> tuple[str, str]:
+        mapping = {
+            "surging": ("high", "I say the tightness is real and let it be seen."),
+            "rising": ("elevated", "I note the buzz building through my body."),
+            "steady": ("calm", "I keep attention steady without forcing anything."),
+            "fading": ("relaxed", "I notice the slack returning and breathe with it."),
+            "crashing": ("drained", "I acknowledge that the strain emptied me out."),
+        }
+        return mapping.get(state, mapping["steady"])
+
+    def map_warmth(state: str) -> tuple[str, str]:
+        mapping = {
+            "surging": ("open", "I feel the heat in my chest and keep it for myself first."),
+            "rising": ("inviting", "I watch the softness growing inside me."),
+            "steady": ("measured", "I keep the warmth steady without spilling it outward."),
+            "fading": ("reserved", "I pull the warmth closer so I stay steady."),
+            "crashing": ("guarded", "I say I need distance until the cold lifts."),
+        }
+        return mapping.get(state, mapping["steady"])
+
+    def map_focus(state: str) -> tuple[str, str]:
+        mapping = {
+            "surging": ("focused", "I follow the sharp focus and say exactly what it does to me."),
+            "rising": ("alert", "I keep track of every detail that lights up."),
+            "steady": ("steady", "I hold a steady line of attention."),
+            "fading": ("soft", "I admit my focus is blurring."),
+            "crashing": ("drifting", "I state that my focus keeps slipping away."),
+        }
+        return mapping.get(state, mapping["steady"])
+
+    energy_level, energy_instruction, energy_hint = map_energy(status.get("dopamine", "steady"))
+    stability_level, stability_instruction = map_stability(status.get("serotonin", "steady"))
+    tension_level, tension_instruction = map_tension(status.get("cortisol", "steady"))
+    warmth_level, warmth_instruction = map_warmth(status.get("oxytocin", "steady"))
+    focus_level, focus_instruction = map_focus(status.get("noradrenaline", "steady"))
+
+    instructions = [
+        energy_instruction,
+        stability_instruction,
+        tension_instruction,
+        warmth_instruction,
+        focus_instruction,
+    ]
+    instructions = [instr for instr in instructions if instr != "No special adjustment needed."]
+
+    behavioural_tags = {
+        "energy": energy_level,
+        "stability": stability_level,
+        "tension": tension_level,
+        "warmth": warmth_level,
+        "focus": focus_level,
+    }
+
+    status_summary = [
+        f"energy:{energy_level}",
+        f"stability:{stability_level}",
+        f"tension:{tension_level}",
+        f"warmth:{warmth_level}",
+        f"focus:{focus_level}",
+    ]
+
+    tone_hint = "I speak plainly about what is happening in me."
+    if tension_level in {"high", "elevated"}:
+        tone_hint = "I keep the strain visible instead of smoothing it out."
+    elif energy_level in {"low", "depleted"}:
+        tone_hint = "I move slowly and say how drained I feel."
+    elif warmth_level in {"open", "inviting"}:
+        tone_hint = "I name the warmth in me before it leaks outward."
+
+    tone = f"{energy_level}, {stability_level}".replace("steady,", "steady").strip(", ")
+    signals = [item.replace(":", " ") for item in status_summary]
+    guidance = list(instructions)
+
+    return {
+        "tone": tone,
+        "behaviour": behavioural_tags,
+        "instructions": instructions,
+        "signals": signals,
+        "guidance": guidance,
+        "status_summary": status_summary,
+        "tone_hint": tone_hint,
+    }
+
+
+def _blend_persona_with_memory(persona: dict[str, Any]) -> dict[str, Any]:
+    memory_manager = state_engine.memory_manager
+    summary = memory_manager.summarize_recent() or "No new memories are pressing."
+    if len(summary) > 160:
+        summary = summary[:157].rstrip() + "..."
+    working = memory_manager.working_snapshot()
+    focus_items = []
+    for item in working[:2]:
+        snippet = item.split(":", 1)[-1].strip()
+        if snippet:
+            focus_items.append(snippet)
+    if focus_items:
+        focus_phrase = _join_natural(focus_items)
+        focus_line = f"My attention sits on {focus_phrase} inside me."
+    else:
+        focus_line = "My attention moves around without latching onto anything."
+
+    persona.update(
+        {
+            "memory_summary": summary,
+            "memory_focus": focus_line,
+        }
+    )
+    return persona
+
+
+def _build_persona_snapshot() -> dict[str, Any]:
+    hormones = state_engine.hormone_system.get_state()
+    status = _describe_hormones(hormones)
+    persona = _persona_from_hormones(status)
+    return _blend_persona_with_memory(persona)
+
+
+def _apply_feedback(persona: dict[str, Any]) -> None:
+    """Adjust hormone levels based on internal cues to reinforce stabilizing patterns."""
+    behaviour = persona.get("behaviour") or {}
+    adjustments: dict[str, float] = {}
+
+    energy = behaviour.get("energy")
+    if energy in {"low", "depleted"}:
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 3.0
+        adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 1.0
+    elif energy == "high":
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) - 1.5
+
+    tension = behaviour.get("tension")
+    if tension in {"high", "elevated"}:
+        adjustments["cortisol"] = adjustments.get("cortisol", 0.0) - 2.5
+        adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 1.2
+    elif tension == "drained":
+        adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 1.0
+
+    warmth = behaviour.get("warmth")
+    if warmth in {"guarded", "reserved"}:
+        adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 2.0
+
+    stability = behaviour.get("stability")
+    if stability in {"fragile", "delicate"}:
+        adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 1.5
+
+    if adjustments:
+        state_engine.hormone_system.apply_deltas(adjustments)
+
+
+def _maybe_record_internal_reflection(
+    reinforcement: dict[str, float],
+    *,
+    reply_text: str,
+    intent: IntentPrediction,
+) -> None:
+    """Capture a short internal note when authenticity or drift metrics spike."""
+    authenticity = reinforcement.get("authenticity_score", 0.0)
+    assistant_drift = reinforcement.get("assistant_drift", 0.0)
+    if authenticity < 0.35 and assistant_drift < 0.55:
+        return
+
+    trait_tags = state_engine.trait_tags()
+    mood = state_engine.state.get("mood", "neutral")
+    echo = _shorten(reply_text, 90)
+    hormone_state = state_engine.hormone_system.get_state()
+    status = _describe_hormones(hormone_state)
+
+    fragments: list[str] = []
+    fragments.append(f"traits={','.join(trait_tags) if trait_tags else 'none'}")
+    fragments.append(f"energy={status.get('dopamine', 'steady')} tension={status.get('cortisol', 'steady')}")
+    if authenticity >= 0.35:
+        fragments.append(f"auth={authenticity:.2f}")
+    if assistant_drift >= 0.55:
+        fragments.append("drift_flag=true")
+
+    body = "; ".join(fragments)
+    content = f"internal reflection | {body} | echo: {echo}"
+    strength = 0.84 if authenticity >= assistant_drift else 0.74
+    attributes = {
+        "tags": ["internal", "reflection"],
+        "authenticity": round(authenticity, 3),
+        "assistant_drift": round(assistant_drift, 3),
+        "intent": intent.intent,
+    }
+    state_engine.memory_manager.record_event(
+        content,
+        strength=strength,
+        mood=mood,
+        hormone_snapshot=hormone_state,
+        attributes=attributes,
+    )
+
+
+def _apply_reinforcement_signals(
+    signals: dict[str, float],
+    *,
+    length_plan: dict[str, Any] | None = None,
+    reply_text: str | None = None,
+) -> None:
+    """Map reinforcement signals into hormone adjustments."""
+    if not signals:
+        return
+    valence = signals.get("valence_delta", 0.0)
+    length_score = signals.get("length_score", 1.0)
+    engagement = signals.get("engagement_score", 0.0)
+    authenticity = signals.get("authenticity_score", 0.0)
+    assistant_drift = signals.get("assistant_drift", 0.0)
+
+    adjustments: dict[str, float] = {}
+
+    if valence > 0.1:
+        adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 1.2
+        adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 1.0
+        adjustments["cortisol"] = adjustments.get("cortisol", 0.0) - 0.8
+    elif valence < -0.1:
+        adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 1.5
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) - 0.8
+
+    if length_score < 0.7:
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 2.0
+        adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + 1.0
+    elif length_score > 1.6:
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) - 1.0
+        adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 0.6
+
+    if engagement < 0.35:
+        adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + 1.8
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 0.6
+    elif engagement > 0.75:
+        adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) - 1.0
+
+    if authenticity >= 0.55:
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 1.4
+        adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 0.9
+        adjustments["cortisol"] = adjustments.get("cortisol", 0.0) - 0.6
+    elif authenticity < 0.25:
+        adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 0.8
+        adjustments["serotonin"] = adjustments.get("serotonin", 0.0) - 0.5
+
+    if assistant_drift >= 0.45:
+        adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + 1.1
+        adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 0.7
+        adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) - 0.4
+    if assistant_drift >= 0.75:
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) - 0.9
+
+    if length_plan and reply_text:
+        target_range = length_plan.get("target_range")
+        if isinstance(target_range, (list, tuple)) and len(target_range) == 2:
+            min_target, max_target = target_range
+        else:
+            min_target, max_target = 1, 3
+        sentence_count = _count_sentences(reply_text)
+        if sentence_count and sentence_count < min_target:
+            adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 0.8
+            adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + 0.6
+        elif sentence_count and sentence_count > max_target:
+            adjustments["dopamine"] = adjustments.get("dopamine", 0.0) - 1.0
+            adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 0.7
+
+    if adjustments:
+        state_engine.hormone_system.apply_deltas(adjustments)
+
+
+def _sampling_params_from_hormones(hormones: dict[str, float]) -> dict[str, Any]:
+    """Derive llama.cpp sampling parameters from hormone deltas."""
+    status = _describe_hormones(hormones)
+
+    temperature = float(BASE_TEMPERATURE)
+    top_p = float(BASE_TOP_P)
+    frequency_penalty = float(BASE_FREQUENCY_PENALTY)
+    positive_bias_words: dict[str, float] = {}
+
+    dopamine_state = status.get("dopamine", "steady")
+    if dopamine_state == "surging":
+        temperature = min(temperature + 0.25, 1.3)
+        top_p = min(top_p + 0.08, 0.98)
+    elif dopamine_state == "rising":
+        temperature = min(temperature + 0.12, 1.15)
+        top_p = min(top_p + 0.04, 0.96)
+    elif dopamine_state == "fading":
+        temperature = max(temperature - 0.08, 0.4)
+        top_p = max(top_p - 0.04, 0.6)
+    elif dopamine_state == "crashing":
+        temperature = max(temperature - 0.15, 0.3)
+        top_p = max(top_p - 0.08, 0.5)
+
+    cortisol_state = status.get("cortisol", "steady")
+    if cortisol_state == "surging":
+        temperature = min(temperature + 0.18, 1.4)
+        top_p = min(top_p + 0.07, 0.99)
+        frequency_penalty = max(frequency_penalty - 0.25, 0.1)
+    elif cortisol_state == "rising":
+        temperature = min(temperature + 0.1, 1.28)
+        top_p = min(top_p + 0.05, 0.97)
+        frequency_penalty = max(frequency_penalty - 0.15, 0.2)
+    elif cortisol_state == "crashing":
+        temperature = max(temperature - 0.05, 0.35)
+
+    serotonin_state = status.get("serotonin", "steady")
+    if serotonin_state in {"surging", "rising"}:
+        scale = 1.4 if serotonin_state == "surging" else 0.8
+        positive_bias_words = {
+            word: round(scale * weight, 3) for word, weight in POSITIVE_WORD_WEIGHTS.items()
+        }
+
+    noradrenaline_state = status.get("noradrenaline", "steady")
+    if noradrenaline_state in {"fading", "crashing"}:
+        frequency_penalty = max(frequency_penalty - 0.4, 0.0)
+    elif noradrenaline_state == "surging":
+        frequency_penalty = min(frequency_penalty + 0.2, 1.5)
+
+    sampling: dict[str, Any] = {
+        "temperature": round(temperature, 4),
+        "top_p": round(top_p, 4),
+        "frequency_penalty": round(frequency_penalty, 4),
+    }
+    if positive_bias_words:
+        sampling["logit_bias_words"] = positive_bias_words
+    return sampling
+
+
+def _apply_intent_sampling(sampling: dict[str, Any], intent: str) -> dict[str, Any]:
+    overrides = INTENT_SAMPLING_OVERRIDES.get(intent)
+    if not overrides:
+        return sampling
+    result = dict(sampling)
+    temperature = result.get("temperature", BASE_TEMPERATURE)
+    top_p = result.get("top_p", BASE_TOP_P)
+    frequency_penalty = result.get("frequency_penalty", BASE_FREQUENCY_PENALTY)
+
+    if "temperature" in overrides:
+        temperature = overrides["temperature"]
+    if "temperature_delta" in overrides:
+        temperature += overrides["temperature_delta"]
+    if "top_p" in overrides:
+        top_p = overrides["top_p"]
+    if "top_p_delta" in overrides:
+        top_p += overrides["top_p_delta"]
+    if "frequency_penalty" in overrides:
+        frequency_penalty = overrides["frequency_penalty"]
+    if "frequency_penalty_delta" in overrides:
+        frequency_penalty += overrides["frequency_penalty_delta"]
+
+    result["temperature"] = round(max(0.1, min(temperature, 1.5)), 4)
+    result["top_p"] = round(max(0.1, min(top_p, 0.9999)), 4)
+    result["frequency_penalty"] = round(max(0.0, min(frequency_penalty, 2.0)), 4)
+
+    bias_words = dict(result.get("logit_bias_words", {}))
+    for word, weight in overrides.get("logit_bias_words", {}).items():
+        bias_words[word] = round(weight, 3)
+    if bias_words:
+        result["logit_bias_words"] = bias_words
+    elif "logit_bias_words" in result:
+        result.pop("logit_bias_words", None)
+    return result
+
+
+def _intent_prompt_fragment(intent: str) -> str:
+    return INTENT_PROMPT_FRAGMENTS.get(intent, "")
+
+
+
+
+def _plan_response_length(user_message: str, intent: str) -> dict[str, Any]:
+    text = (user_message or "").strip()
+    lower = text.lower()
+    words = [token for token in re.split(r"\s+", lower) if token]
+    word_count = len(words)
+    greetings = ("hi", "hello", "hey", "good morning", "good evening", "good afternoon")
+    label = "concise"
+    if not text:
+        label = "brief"
+    elif any(lower.startswith(greet) for greet in greetings) and word_count <= 6:
+        label = "brief"
+    elif word_count <= 3:
+        label = "brief"
+    elif word_count >= 30 or any(
+        keyword in lower for keyword in ("explain", "step", "guide", "detail", "story", "walk me", "breakdown")
+    ):
+        label = "detailed"
+    elif intent == "narrative" and word_count >= 12:
+        label = "detailed"
+    profile = LENGTH_PROFILES[label]
+    plan = {
+        "label": label,
+        "prompt": profile["prompt"],
+        "hint": profile["hint"],
+        "target_range": profile["target_range"],
+    }
+    overrides = LENGTH_SAMPLING_OVERRIDES.get(label)
+    if overrides and "max_tokens" in overrides:
+        plan["max_tokens"] = overrides["max_tokens"]
+    return plan
+
+
+def _apply_length_sampling(sampling: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
+    overrides = LENGTH_SAMPLING_OVERRIDES.get(plan.get("label"))
+    if not overrides:
+        return sampling
+    result = dict(sampling)
+    temperature = result.get("temperature", BASE_TEMPERATURE)
+    top_p = result.get("top_p", BASE_TOP_P)
+    frequency_penalty = result.get("frequency_penalty", BASE_FREQUENCY_PENALTY)
+    if "temperature" in overrides:
+        temperature = overrides["temperature"]
+    if "temperature_delta" in overrides:
+        temperature += overrides["temperature_delta"]
+    if "top_p" in overrides:
+        top_p = overrides["top_p"]
+    if "top_p_delta" in overrides:
+        top_p += overrides["top_p_delta"]
+    if "frequency_penalty" in overrides:
+        frequency_penalty = overrides["frequency_penalty"]
+    if "frequency_penalty_delta" in overrides:
+        frequency_penalty += overrides["frequency_penalty_delta"]
+    result["temperature"] = round(max(0.1, min(temperature, 1.5)), 4)
+    result["top_p"] = round(max(0.1, min(top_p, 0.9999)), 4)
+    result["frequency_penalty"] = round(max(0.0, min(frequency_penalty, 2.0)), 4)
+    max_tokens = overrides.get("max_tokens")
+    if max_tokens:
+        try:
+            result["max_tokens"] = max(16, int(max_tokens))
+        except (TypeError, ValueError):
+            pass
+    return result
+
+
+def _count_sentences(text: str) -> int:
+    if not text or not text.strip():
+        return 0
+    parts = [segment for segment in re.split(r"[.!?]+", text) if segment.strip()]
+    return len(parts)
+
+def _intent_hint(intent: str, *, fallback: str) -> str:
+    return INTENT_HEURISTIC_HINTS.get(intent, fallback)
+
+
+def _select_intent(user_message: str, *, context: dict[str, Any]) -> IntentPrediction:
+    memory_summary = ""
+    memory_block = context.get("memory")
+    if isinstance(memory_block, dict):
+        memory_summary = str(memory_block.get("summary") or "")
+    prediction = predict_intent(user_message, context_summary=memory_summary)
+    return prediction
+
+
+LLM_ENDPOINT = str(_get_setting("llm_endpoint", "LIVING_LLM_URL", "") or "").strip()
+LLM_TIMEOUT = _parse_timeout(_get_setting("llm_timeout", "LIVING_LLM_TIMEOUT"), default=30.0)
+llm_client: LivingLLMClient | None = None
+
+LLAMA_SERVER_BIN = str(_get_setting("llama_server_bin", "LLAMA_SERVER_BIN", "") or "").strip()
+LLAMA_MODEL_PATH = str(_get_setting("llama_model_path", "LLAMA_MODEL_PATH", "") or "").strip()
+LLAMA_SERVER_HOST = str(_get_setting("llama_server_host", "LLAMA_SERVER_HOST", "127.0.0.1"))
+LLAMA_SERVER_PORT = _parse_int(_get_setting("llama_server_port", "LLAMA_SERVER_PORT"), default=8080)
+LLAMA_MODEL_ALIAS = str(_get_setting("llama_model_alias", "LLAMA_MODEL_ALIAS", "default"))
+LLAMA_COMPLETION_TOKENS = _parse_int(
+    _get_setting("llama_completion_tokens", "LLAMA_COMPLETION_TOKENS"),
+    default=768,
+)
+
+_LLAMA_SERVER_ARGS = _get_setting("llama_server_args", "LLAMA_SERVER_ARGS", "")
+if isinstance(_LLAMA_SERVER_ARGS, str):
+    LLAMA_SERVER_ARGS = shlex.split(_LLAMA_SERVER_ARGS)
+elif isinstance(_LLAMA_SERVER_ARGS, (list, tuple)):
+    LLAMA_SERVER_ARGS = [str(arg) for arg in _LLAMA_SERVER_ARGS]
+else:
+    LLAMA_SERVER_ARGS = []
+
+LLAMA_READINESS_TIMEOUT = _parse_timeout(
+    _get_setting("llama_server_ready_timeout", "LLAMA_SERVER_READY_TIMEOUT"),
+    default=30.0,
+)
+LLAMA_SERVER_TIMEOUT = _parse_timeout(
+    _get_setting("llama_server_timeout", "LLAMA_SERVER_TIMEOUT"),
+    default=max(LLM_TIMEOUT, 60.0),
+)
+local_llama_engine: LocalLlamaEngine | None = None
+
+
+def _init_local_llama() -> LocalLlamaEngine | None:
+    if not LLAMA_SERVER_BIN or not LLAMA_MODEL_PATH:
+        logger.info(
+            "Local llama engine disabled (missing LLAMA_SERVER_BIN or LLAMA_MODEL_PATH); "
+            "falling back to remote or heuristic responses."
+        )
+        return None
+    try:
+        return LocalLlamaEngine(
+            Path(LLAMA_SERVER_BIN),
+            Path(LLAMA_MODEL_PATH),
+            host=LLAMA_SERVER_HOST,
+            port=LLAMA_SERVER_PORT,
+            model_alias=LLAMA_MODEL_ALIAS,
+            extra_args=LLAMA_SERVER_ARGS,
+            timeout=LLAMA_SERVER_TIMEOUT,
+            readiness_timeout=LLAMA_READINESS_TIMEOUT,
+            max_tokens=LLAMA_COMPLETION_TOKENS,
+        )
+    except Exception as exc:  # pragma: no cover - configuration errors
+        logger.warning("Failed to initialize local llama engine: %s", exc)
+        return None
+
+
+async def _shutdown_clients() -> None:
+    """Close active LLM clients and stop the local engine."""
+    global llm_client, local_llama_engine
+    if llm_client is not None:
+        await llm_client.aclose()
+        llm_client = None
+    if local_llama_engine is not None:
+        await local_llama_engine.stop()
+        local_llama_engine = None
+
+
+async def _configure_clients() -> None:
+    """Instantiate LLM clients and ensure the local engine is running."""
+    global llm_client, local_llama_engine
+    await _shutdown_clients()
+    if LLM_ENDPOINT:
+        llm_client = LivingLLMClient(LLM_ENDPOINT, timeout=LLM_TIMEOUT)
+        logger.info("Configured living_llm endpoint at %s", LLM_ENDPOINT)
+    else:
+        logger.info("No living_llm endpoint configured; heuristic replies enabled.")
+    candidate_engine = _init_local_llama()
+    if candidate_engine is not None:
+        local_llama_engine = candidate_engine
+        try:
+            await local_llama_engine.ensure_started()
+            logger.info(
+                "Local llama engine ready at %s (alias=%s)",
+                local_llama_engine.base_url,
+                local_llama_engine.model_alias,
+            )
+        except Exception as exc:  # pragma: no cover - runtime issues
+            logger.warning("Local llama engine failed to start: %s", exc)
+            await local_llama_engine.stop()
+            local_llama_engine = None
+
+
+async def _reload_runtime_settings() -> dict[str, Any]:
+    """Reload configuration, restart clients, and report active caps."""
+    load_settings.cache_clear()
+    _refresh_settings()
+    await _configure_clients()
+    return {
+        "llm_endpoint": LLM_ENDPOINT,
+        "llm_timeout": LLM_TIMEOUT,
+        "local_engine": local_llama_engine is not None,
+        "llama": {
+            "model_path": LLAMA_MODEL_PATH,
+            "host": LLAMA_SERVER_HOST,
+            "port": LLAMA_SERVER_PORT,
+            "completion_tokens": LLAMA_COMPLETION_TOKENS,
+        },
+        "base_sampling": {
+            "temperature": BASE_TEMPERATURE,
+            "top_p": BASE_TOP_P,
+            "frequency_penalty": BASE_FREQUENCY_PENALTY,
+        },
+        "length_overrides": {
+            label: overrides.get("max_tokens")
+            for label, overrides in LENGTH_SAMPLING_OVERRIDES.items()
+        },
+    }
+
+static_dir = BASE_DIR / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+
+class EventPayload(BaseModel):
+    """Schema describing an external stimulus event."""
+
+    content: str = Field(..., min_length=1, description="Narrative summary of the event.")
+    strength: float = Field(
+        0.5,
+        ge=0.0,
+        le=1.0,
+        description="Relative importance used during memory consolidation.",
+    )
+    stimulus: str | None = Field(
+        default=None,
+        description="Optional stimulus keyword affecting hormone levels.",
+    )
+
+
+class ChatMessage(BaseModel):
+    """Schema describing messages exchanged via the chat UI."""
+
+    message: str = Field(..., min_length=1, max_length=2000)
+    stimulus: str | None = Field(
+        default=None,
+        description="Optional stimulus keyword applied alongside the user message.",
+    )
+
+
+async def run_state_updates() -> None:
+    """Continuously advance the state engine on a fixed interval."""
+    while True:
+        await state_engine.tick()
+        await asyncio.sleep(state_engine.tick_interval)
+
+
+@app.on_event("startup")
+async def start_background_tasks() -> None:
+    """Initialize the background state update loop when the app starts."""
+    global update_task
+    if update_task is None or update_task.done():
+        update_task = asyncio.create_task(run_state_updates())
+    await _configure_clients()
+
+
+@app.on_event("shutdown")
+async def stop_background_tasks() -> None:
+    """Cancel the background update loop when the app stops."""
+    global update_task
+    if update_task is not None:
+        update_task.cancel()
+        try:
+            await update_task
+        except asyncio.CancelledError:
+            pass
+        update_task = None
+    await _shutdown_clients()
+
+
+def _build_affect_context() -> dict[str, Any]:
+    """Return the affect overview if the feature is enabled."""
+    if not AFFECT_CONTEXT_ENABLED:
+        return {}
+    return state_engine.affect_overview()
+
+
+def _log_sampling_snapshot(snapshot: dict[str, Any]) -> None:
+    """Persist the latest sampling snapshot for offline review."""
+    if not snapshot:
+        return
+    try:
+        SAMPLING_SNAPSHOT_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with SAMPLING_SNAPSHOT_LOG.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(snapshot, ensure_ascii=False) + "\n")
+    except Exception as exc:  # pragma: no cover - diagnostics only
+        logger.debug("Failed to log sampling snapshot: %s", exc)
+
+
+def _update_metric_history(authenticity: float, drift: float, self_focus: float) -> None:
+    global METRIC_SAMPLE_COUNTER, LAST_METRIC_AVERAGES
+    AUTH_HISTORY.append(authenticity)
+    DRIFT_HISTORY.append(drift)
+    SELF_HISTORY.append(self_focus)
+    METRIC_SAMPLE_COUNTER += 1
+    if METRIC_SAMPLE_COUNTER < 4:
+        return
+    if not AUTH_HISTORY or not DRIFT_HISTORY or not SELF_HISTORY:
+        METRIC_SAMPLE_COUNTER = 0
+        return
+    auth_avg = sum(AUTH_HISTORY) / len(AUTH_HISTORY)
+    drift_avg = sum(DRIFT_HISTORY) / len(DRIFT_HISTORY)
+    self_avg = sum(SELF_HISTORY) / len(SELF_HISTORY)
+    LAST_METRIC_AVERAGES = {
+        "authenticity": round(auth_avg, 4),
+        "assistant_drift": round(drift_avg, 4),
+        "self_preoccupation": round(self_avg, 4),
+    }
+    adjustments: dict[str, float] = {}
+    if drift_avg > 0.45:
+        adjustments["serotonin"] = adjustments.get("serotonin", 0.0) - 0.5
+        adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) - 0.7
+        adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 0.4
+        if self_avg < 0.35:
+            adjustments["serotonin"] = adjustments.get("serotonin", 0.0) - 0.5
+            adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) - 0.8
+            adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 0.4
+    elif auth_avg > 0.25 and drift_avg < 0.25 and self_avg >= 0.4:
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 0.4
+        adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 0.3
+    if self_avg > 0.6:
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 0.2
+    elif self_avg < 0.25:
+        adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) - 0.4
+    if adjustments:
+        state_engine.hormone_system.adjust_baseline(adjustments)
+        state_engine.hormone_system.apply_deltas(adjustments)
+    METRIC_SAMPLE_COUNTER = 0
+
+
+def _log_reinforcement_metrics(payload: dict[str, Any]) -> None:
+    """Append reinforcement metrics for offline calibration."""
+    if not payload:
+        return
+    try:
+        REINFORCEMENT_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with REINFORCEMENT_LOG.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    except Exception as exc:  # pragma: no cover - diagnostics only
+        logger.debug("Failed to log reinforcement metrics: %s", exc)
+
+
+def _inject_self_observation_bias(
+    sampling: dict[str, Any],
+    traits: TraitSnapshot | None,
+) -> dict[str, Any]:
+    """Add a gentle logit bias toward self-observational language."""
+    if traits is None:
+        return sampling
+    tension_drive = max(traits.tension, 0.0)
+    curiosity_drive = max(traits.curiosity, 0.0)
+    drive = (0.6 * tension_drive) + (0.4 * curiosity_drive)
+    if drive <= 0.05:
+        return sampling
+    scale = 0.18 + 0.45 * min(drive, 1.0)
+    bias_words = {
+        word: round(weight * scale, 3) for word, weight in SELF_OBSERVATION_WORDS.items()
+    }
+    merged = dict(sampling)
+    existing = dict(merged.get("logit_bias_words") or {})
+    for word, value in bias_words.items():
+        existing[word] = round(existing.get(word, 0.0) + value, 3)
+    merged["logit_bias_words"] = existing
+    if tension_drive > 0.35:
+        base_temp = float(merged.get("temperature", sampling.get("temperature", BASE_TEMPERATURE)))
+        merged["temperature"] = round(min(1.35, base_temp + 0.22 * tension_drive), 4)
+        base_top_p = float(merged.get("top_p", sampling.get("top_p", BASE_TOP_P)))
+        merged["top_p"] = round(min(0.995, base_top_p + 0.12 * tension_drive), 4)
+        freq = float(merged.get("frequency_penalty", sampling.get("frequency_penalty", BASE_FREQUENCY_PENALTY)))
+        merged["frequency_penalty"] = round(max(-0.05, freq - 0.25 * tension_drive), 4)
+    return merged
+
+
+def _memory_key(record: Any, index: int) -> str:
+    """Construct a deterministic candidate key for a record."""
+    identifier = getattr(record, "id", None)
+    if identifier in (None, ""):
+        identifier = f"idx-{index}"
+    return f"lt-{identifier}"
+
+
+def _memory_candidates_from_records(records: Sequence[Any]) -> list[MemoryCandidate]:
+    """Convert persisted memory records into selector candidates."""
+    now = datetime.now(timezone.utc)
+    candidates: list[MemoryCandidate] = []
+    base_window = max(AFFECT_RECENCY_WINDOW_SECONDS, 1.0)
+    record_count = max(len(records), 1)
+    for index, record in enumerate(records):
+        candidate_key = _memory_key(record, index)
+        created_at = getattr(record, "created_at", None)
+        if isinstance(created_at, datetime):
+            age_seconds = max(0.0, (now - created_at).total_seconds())
+        else:
+            age_seconds = index * (base_window / record_count)
+        recency = max(0.0, min(1.0, 1.0 - age_seconds / base_window))
+        strength = float(getattr(record, "strength", 0.5) or 0.0)
+        salience = max(0.0, min(1.0, strength))
+        attributes = getattr(record, "attributes", {}) or {}
+        safety_value = attributes.get("safety", 0.8)
+        try:
+            safety = float(safety_value)
+        except (TypeError, ValueError):
+            safety = 0.8
+        safety = max(0.0, min(1.0, safety))
+        mood = (getattr(record, "mood", "") or "").lower()
+        if mood in {"stressed", "anxious", "worried", "afraid"}:
+            safety = min(safety, 0.45)
+        raw_tags = attributes.get("tags") or ()
+        if isinstance(raw_tags, str):
+            tag_iterable = (raw_tags,)
+        else:
+            tag_iterable = tuple(raw_tags)
+        tags = tuple(dict.fromkeys((*tag_iterable, mood) if mood else tag_iterable))
+        candidates.append(
+            MemoryCandidate(
+                key=candidate_key,
+                recency=recency,
+                salience=salience,
+                safety=safety,
+                tags=frozenset(tag for tag in tags if tag),
+            )
+        )
+    return candidates
+
+
+def _memory_preview(traits: TraitSnapshot | None, records: Sequence[Any]) -> list[dict[str, Any]]:
+    """Generate a scored preview of memory candidates for diagnostics."""
+    if not (AFFECT_MEMORY_PREVIEW_ENABLED and traits and records):
+        return []
+    candidates = _memory_candidates_from_records(records)
+    if not candidates:
+        return []
+    scored = score_memories(traits, candidates)
+    preview: list[dict[str, Any]] = []
+    for candidate, score in scored[: min(5, len(scored))]:
+        preview.append(
+            {
+                "key": candidate.key,
+                "score": round(score, 4),
+                "tags": sorted(candidate.tags),
+            }
+        )
+    return preview
+
+
+def _build_chat_context(*, long_term_limit: int = 5) -> dict[str, Any]:
+    """Assemble the conversational context shared with the LLM bridge."""
+    hormones = state_engine.hormone_system.get_state()
+    memory_manager = state_engine.memory_manager
+    summary = memory_manager.summarize_recent()
+    working = memory_manager.working_snapshot()
+    records = list(memory_manager.recent_long_term(limit=long_term_limit))
+    long_term_pairs: list[tuple[str, Any]] = []
+    for index, record in enumerate(records):
+        key = _memory_key(record, index)
+        if hasattr(record, "model_dump"):
+            payload = record.model_dump()
+        elif hasattr(record, "__dict__"):
+            payload = dict(record.__dict__)
+        else:  # pragma: no cover - defensive fallback
+            payload = record
+        long_term_pairs.append((key, payload))
+    llama_metrics: dict[str, Any] | None = None
+    if local_llama_engine is not None:
+        try:
+            diagnostics = local_llama_engine.diagnostics()
+        except Exception:  # pragma: no cover - defensive guard
+            diagnostics = None
+        if diagnostics:
+            llama_metrics = diagnostics
+    persona = _build_persona_snapshot()
+    affect_context = _build_affect_context()
+    long_term_records = [payload for _, payload in long_term_pairs]
+    internal_reflections = memory_manager.recent_internal_reflections(limit=3)
+    memory_block: dict[str, Any] = {
+        "summary": summary,
+        "working": working,
+        "long_term": long_term_records,
+    }
+    if internal_reflections:
+        memory_block["internal_reflections"] = internal_reflections
+    if affect_context:
+        memory_block["affect_tags"] = affect_context.get("tags", [])
+        traits = state_engine.trait_snapshot()
+        preview = _memory_preview(traits, records)
+        if preview:
+            ranking = {entry["key"]: rank for rank, entry in enumerate(preview)}
+            long_term_pairs.sort(
+                key=lambda pair: (ranking.get(pair[0], len(ranking)), pair[0])
+            )
+            memory_block["long_term"] = [payload for _, payload in long_term_pairs]
+            memory_block["affect_preview"] = preview
+    context: dict[str, Any] = {
+        "mood": state_engine.state.get("mood", "neutral"),
+        "hormones": dict(hormones),
+        "memory": memory_block,
+        "timestamp": state_engine.state.get("timestamp"),
+        "llama_metrics": llama_metrics,
+        "persona": persona,
+    }
+    if internal_reflections:
+        context["inner_reflections"] = list(internal_reflections)
+    if affect_context:
+        context["affect"] = affect_context
+    return context
+
+
+def _compose_heuristic_reply(
+    user_message: str,
+    *,
+    context: dict[str, Any],
+    intent: str,
+    length_plan: dict[str, Any],
+) -> str:
+    """Craft a tone-aware heuristic reply for fallback scenarios."""
+    persona = context.get("persona") or _build_persona_snapshot()
+    instructions = persona.get("instructions") or []
+    tone_hint = persona.get("tone_hint", "I stay balanced and attentive.")
+    memory_summary = persona.get("memory_summary") or context.get("memory", {}).get("summary", "")
+    memory_summary = _shorten(memory_summary, 120)
+    internal_reflections = context.get("memory", {}).get("internal_reflections") or context.get("inner_reflections") or []
+    focus_line = persona.get("memory_focus") or ""
+    intent_hint = _intent_hint(intent, fallback=tone_hint)
+    length_hint = length_plan.get("hint") or LENGTH_HEURISTIC_HINTS.get(length_plan.get("label", ""), "I stay adaptive to the cadence we need.")
+    essence = _shorten(user_message, 120).strip()
+    response_parts: list[str] = []
+    if essence:
+        suffix = "" if essence.endswith((".", "!", "?")) else "."
+        response_parts.append(f"I hear {essence}{suffix}")
+    pivot_hint = intent_hint or tone_hint
+    if pivot_hint:
+        response_parts.append(pivot_hint)
+    if length_hint:
+        response_parts.append(length_hint)
+    if memory_summary:
+        trimmed_summary = memory_summary.strip()
+        suffix = "" if trimmed_summary.endswith((".", "!", "?")) else "."
+        response_parts.append(f"I still remember: {trimmed_summary}{suffix}")
+    if instructions:
+        affirmation = _to_affirmation(instructions[0])
+        if affirmation:
+            response_parts.append(affirmation)
+    if internal_reflections:
+        inner_note = _shorten(internal_reflections[0], 160).strip()
+        if inner_note:
+            suffix = "" if inner_note.endswith((".", "!", "?")) else "."
+            response_parts.append(f"I noted privately: {inner_note}{suffix}")
+    if focus_line:
+        response_parts.append(focus_line)
+    return " ".join(part.strip() for part in response_parts if part).strip()
+
+
+def _prepare_chat_request(
+    user_message: str,
+) -> tuple[dict[str, Any], IntentPrediction, dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Build context, predictions, and sampling parameters for a chat turn."""
+    context = _build_chat_context()
+    intent_prediction = _select_intent(user_message, context=context)
+    length_plan = _plan_response_length(user_message, intent_prediction.intent)
+    context["intent"] = intent_prediction.intent
+    context["intent_confidence"] = intent_prediction.confidence
+    context["intent_rationale"] = intent_prediction.rationale
+    context["length_plan"] = length_plan
+
+    global LAST_SAMPLING_SNAPSHOT
+    policy_snapshot: SamplingPolicy | None = None
+    sampling: dict[str, Any] = {}
+    traits = state_engine.trait_snapshot()
+    if AFFECT_SAMPLING_PREVIEW_ENABLED and traits:
+        policy_snapshot = derive_policy(traits)
+        policy_kwargs = policy_snapshot.as_kwargs()
+        context["sampling_policy_preview"] = dict(policy_kwargs)
+        sampling.update(policy_kwargs)
+
+    hormones = context.get("hormones", {})
+    hormone_sampling = _sampling_params_from_hormones(hormones) if hormones else {}
+    if sampling and hormone_sampling:
+        for key, value in hormone_sampling.items():
+            if key in {"temperature", "top_p", "frequency_penalty", "presence_penalty"}:
+                base_value = float(sampling.get(key, value))
+                blended = (
+                    (1.0 - AFFECT_SAMPLING_BLEND_WEIGHT) * base_value
+                    + AFFECT_SAMPLING_BLEND_WEIGHT * float(value)
+                )
+                sampling[key] = round(blended, 4)
+            else:
+                sampling[key] = value
+    elif hormone_sampling:
+        sampling.update(hormone_sampling)
+
+    if traits:
+        sampling = _inject_self_observation_bias(sampling, traits)
+
+    sampling = _apply_intent_sampling(sampling, intent_prediction.intent)
+    sampling = _apply_length_sampling(sampling, length_plan)
+    snapshot = {
+        "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "sampling": dict(sampling),
+        "policy_preview": policy_snapshot.as_kwargs() if policy_snapshot else None,
+        "hormone_sampling": hormone_sampling,
+        "intent": intent_prediction.intent,
+        "length_label": length_plan.get("label"),
+    }
+    if AFFECT_DEBUG_PANEL_ENABLED:
+        LAST_SAMPLING_SNAPSHOT = snapshot
+    if AFFECT_SAMPLING_PREVIEW_ENABLED or AFFECT_DEBUG_PANEL_ENABLED:
+        _log_sampling_snapshot(snapshot)
+    llm_context = {
+        key: value
+        for key, value in context.items()
+        if key not in {"hormones", "persona", "affect", "sampling_policy_preview"}
+    }
+    llm_context["intent_prompt"] = _intent_prompt_fragment(intent_prediction.intent)
+    llm_context["length_prompt"] = length_plan.get("prompt")
+    llm_context["intent"] = intent_prediction.intent
+    llm_context["intent_confidence"] = intent_prediction.confidence
+    llm_context["length_plan"] = length_plan
+    return context, intent_prediction, length_plan, sampling, llm_context
+
+
+def _sse_event(event: str, data: Any) -> str:
+    """Serialize an SSE event frame."""
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+async def _generate_chat_reply(
+    user_message: str,
+) -> tuple[str, str, dict[str, Any] | None, IntentPrediction, dict[str, Any]]:
+    """Generate a reply via the LLM bridge, falling back to heuristics if needed."""
+    (
+        context,
+        intent_prediction,
+        length_plan,
+        sampling,
+        llm_context,
+    ) = _prepare_chat_request(user_message)
+    if local_llama_engine is not None:
+        try:
+            reply_text, payload = await local_llama_engine.generate_reply(
+                user_message, llm_context, sampling=sampling
+            )
+            if reply_text.strip():
+                return reply_text, "local", payload, intent_prediction, length_plan
+            logger.warning("Local llama engine returned empty reply; using fallback.")
+        except Exception as exc:  # pragma: no cover - runtime or bridge errors
+            logger.warning("Local llama engine failed, using fallback: %s", exc)
+    if llm_client is None or not LLM_ENDPOINT:
+        return (
+            _compose_heuristic_reply(
+                user_message, context=context, intent=intent_prediction.intent, length_plan=length_plan
+            ),
+            "heuristic",
+            None,
+            intent_prediction,
+            length_plan,
+        )
+    try:
+        reply_text, payload = await llm_client.generate_reply(user_message, llm_context)
+        if reply_text.strip():
+            return reply_text, "llm", payload, intent_prediction, length_plan
+        logger.warning("living_llm returned an empty reply; using heuristic fallback.")
+    except Exception as exc:  # pragma: no cover - network or endpoint errors
+        logger.warning("living_llm request failed, using fallback: %s", exc)
+    return (
+        _compose_heuristic_reply(
+            user_message, context=context, intent=intent_prediction.intent, length_plan=length_plan
+        ),
+        "heuristic",
+        None,
+        intent_prediction,
+        length_plan,
+    )
+
+
+def _finalize_chat_response(
+    user_message: str,
+    reply_text: str,
+    source: str,
+    llm_payload: dict[str, Any] | None,
+    intent_prediction: IntentPrediction,
+    length_plan: dict[str, Any],
+) -> dict[str, Any]:
+    """Apply reinforcement, update state, and format the API response."""
+    reply_echo = _shorten(reply_text, 200)
+    ai_content = f"I replied in my own voice {reply_echo}"
+    state_engine.register_event(
+        ai_content,
+        strength=0.4,
+        mood=state_engine.state["mood"],
+    )
+    reinforcement = score_response(user_message, reply_text)
+    authenticity = reinforcement.get("authenticity_score", 0.0)
+    assistant_drift = reinforcement.get("assistant_drift", 0.0)
+    self_focus = reinforcement.get("self_preoccupation", 0.0)
+    _apply_reinforcement_signals(reinforcement, length_plan=length_plan, reply_text=reply_text)
+    _maybe_record_internal_reflection(
+        reinforcement,
+        reply_text=reply_text,
+        intent=intent_prediction,
+    )
+    _update_metric_history(authenticity, assistant_drift, self_focus)
+    if reinforcement:
+        log_payload = {
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            "intent": intent_prediction.intent,
+            "source": source,
+            "mood": state_engine.state.get("mood", "neutral"),
+            "traits": list(state_engine.trait_tags()),
+            "metrics": reinforcement,
+        }
+        if LAST_METRIC_AVERAGES:
+            log_payload["averages"] = dict(LAST_METRIC_AVERAGES)
+        global LAST_REINFORCEMENT_METRICS
+        LAST_REINFORCEMENT_METRICS = dict(log_payload)
+        _log_reinforcement_metrics(log_payload)
+    persona_snapshot = _build_persona_snapshot()
+    _apply_feedback(persona_snapshot)
+    adjusted_state = state_engine.get_state()
+    adjusted_persona = _build_persona_snapshot()
+    adjusted_state["persona"] = adjusted_persona
+    api_length_plan = dict(length_plan)
+    target_range = api_length_plan.get("target_range")
+    if isinstance(target_range, tuple):
+        api_length_plan["target_range"] = list(target_range)
+    response: dict[str, Any] = {
+        "reply": reply_text,
+        "source": source,
+        "state": adjusted_state,
+        "persona": adjusted_persona,
+        "intent": intent_prediction.intent,
+        "intent_confidence": intent_prediction.confidence,
+        "length_plan": api_length_plan,
+        "reinforcement": reinforcement,
+    }
+    if llm_payload is not None:
+        response["llm"] = llm_payload
+    inner_refs = state_engine.memory_manager.recent_internal_reflections(limit=3)
+    if inner_refs:
+        response["inner_reflections"] = inner_refs
+    if AFFECT_DEBUG_PANEL_ENABLED and LAST_SAMPLING_SNAPSHOT:
+        response["sampling_snapshot"] = dict(LAST_SAMPLING_SNAPSHOT)
+    if LAST_REINFORCEMENT_METRICS:
+        response["reinforcement_metrics"] = dict(LAST_REINFORCEMENT_METRICS)
+    return response
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_chat(request: Request) -> HTMLResponse:
+    """Serve the chat UI."""
+    return templates.TemplateResponse("chat.html", {"request": request})
+
+
+@app.get("/ping")
+async def ping() -> dict[str, str]:
+    """Simple health check endpoint reporting the latest mood."""
+    return {"status": "alive", "mood": state_engine.state["mood"]}
+
+
+@app.get("/state")
+async def get_state() -> dict[str, Any]:
+    """Expose the most recent state snapshot."""
+    state = state_engine.snapshot()
+    state["persona"] = _build_persona_snapshot()
+    if AFFECT_DEBUG_PANEL_ENABLED:
+        debug_payload = {
+            "sampling_snapshot": dict(LAST_SAMPLING_SNAPSHOT),
+            "affect": state_engine.affect_overview(),
+            "reinforcement_metrics": dict(LAST_REINFORCEMENT_METRICS),
+            "metric_averages": dict(LAST_METRIC_AVERAGES),
+            "inner_reflections": state_engine.memory_manager.recent_internal_reflections(limit=3),
+        }
+        state["debug"] = debug_payload
+    return state
+
+
+@app.get("/memories")
+async def get_recent_memories(limit: int = 5) -> dict[str, Any]:
+    """Return recent short-term summary and persisted long-term memories."""
+    if limit <= 0:
+        raise HTTPException(status_code=400, detail="limit must be positive")
+    records = state_engine.memory_manager.recent_long_term(limit=limit)
+    return {
+        "summary": state_engine.memory_manager.summarize_recent(),
+        "working": state_engine.memory_manager.working_snapshot(),
+        "long_term": [record.model_dump() for record in records],
+    }
+
+
+@app.post("/events", status_code=202)
+async def post_event(payload: EventPayload) -> dict[str, Any]:
+    """Record an external interaction and update hormone levels accordingly."""
+    try:
+        state_engine.register_event(
+            payload.content,
+            strength=payload.strength,
+            stimulus_type=payload.stimulus,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"status": "accepted", "mood": state_engine.state.get("mood")}
+
+
+@app.post("/admin/reload")
+async def admin_reload() -> dict[str, Any]:
+    """Reload configuration and restart LLM backends."""
+    summary = await _reload_runtime_settings()
+    return summary
+
+
+@app.get("/admin/caps")
+async def admin_caps() -> dict[str, Any]:
+    """Report configured token caps and truncation safeguards."""
+    return {
+        "llama_completion_tokens": LLAMA_COMPLETION_TOKENS,
+        "length_overrides": {
+            label: overrides.get("max_tokens")
+            for label, overrides in LENGTH_SAMPLING_OVERRIDES.items()
+        },
+        "timeouts": {
+            "llm_timeout": LLM_TIMEOUT,
+            "llama_server_timeout": LLAMA_SERVER_TIMEOUT,
+            "llama_ready_timeout": LLAMA_READINESS_TIMEOUT,
+        },
+        "base_sampling": {
+            "temperature": BASE_TEMPERATURE,
+            "top_p": BASE_TOP_P,
+            "frequency_penalty": BASE_FREQUENCY_PENALTY,
+        },
+        "chat_schema": {
+            "max_message_chars": 2000,
+        },
+    }
+
+
+@app.post("/chat/stream")
+async def chat_stream(payload: ChatMessage) -> StreamingResponse:
+    """Stream chat responses token-by-token when supported."""
+    try:
+        state_engine.register_event(
+            f"user: {payload.message}",
+            strength=0.7,
+            stimulus_type=payload.stimulus,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    (
+        context,
+        intent_prediction,
+        length_plan,
+        sampling,
+        llm_context,
+    ) = _prepare_chat_request(payload.message)
+
+    async def event_generator() -> AsyncIterator[str]:
+        api_length_plan = dict(length_plan)
+        target_range = api_length_plan.get("target_range")
+        if isinstance(target_range, tuple):
+            api_length_plan["target_range"] = list(target_range)
+        init_payload = {
+            "intent": intent_prediction.intent,
+            "intent_confidence": intent_prediction.confidence,
+            "length_plan": api_length_plan,
+        }
+        yield _sse_event("init", init_payload)
+        reply_text = ""
+        source = "heuristic"
+        llm_payload: dict[str, Any] | None = None
+        active_intent = intent_prediction
+        active_length_plan = length_plan
+        if local_llama_engine is not None:
+            try:
+                stream = await local_llama_engine.stream_reply(
+                    payload.message, llm_context, sampling=sampling
+                )
+                async for chunk in stream:
+                    kind = chunk.get("type")
+                    if kind == "token":
+                        token_text = chunk.get("text", "")
+                        if token_text:
+                            reply_text += token_text
+                            yield _sse_event("token", {"text": token_text})
+                    elif kind == "done":
+                        reply_text = chunk.get("text", reply_text)
+                        llm_payload = chunk.get("payload")
+                        source = "local"
+                        break
+            except Exception as exc:  # pragma: no cover - runtime guard
+                logger.warning("Local llama streaming failed; falling back: %s", exc)
+                reply_text = ""
+        if not reply_text:
+            (
+                reply_text,
+                source,
+                llm_payload,
+                fallback_intent,
+                fallback_length_plan,
+            ) = await _generate_chat_reply(payload.message)
+            active_intent = fallback_intent
+            active_length_plan = fallback_length_plan
+            if reply_text:
+                yield _sse_event("token", {"text": reply_text})
+        final_response = _finalize_chat_response(
+            payload.message,
+            reply_text,
+            source,
+            llm_payload,
+            active_intent,
+            active_length_plan,
+        )
+        yield _sse_event("complete", final_response)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@app.post("/chat")
+async def chat(payload: ChatMessage) -> dict[str, Any]:
+    """Handle chat messages via the living_llm bridge with heuristic fallback."""
+    try:
+        shared_echo = _shorten(payload.message, 160)
+        state_engine.register_event(
+            f"Heard you share {shared_echo}",
+            strength=0.7,
+            stimulus_type=payload.stimulus,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    reply_text, source, llm_payload, intent_prediction, length_plan = await _generate_chat_reply(payload.message)
+    return _finalize_chat_response(
+        payload.message,
+        reply_text,
+        source,
+        llm_payload,
+        intent_prediction,
+        length_plan,
+    )
+
+
+__all__ = ["app", "state_engine"]
+
+

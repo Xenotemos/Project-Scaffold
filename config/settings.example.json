@@ -1,0 +1,13 @@
+{
+    "llm_endpoint": "http://localhost:8001/chat",
+    "llm_timeout": 30.0,
+    "llama_server_bin": "third_party/llama.cpp/build/bin/Release/llama-server.exe",
+    "llama_model_path": "D:/AI/LLMs/sample-model.gguf",
+    "llama_server_args": "--threads 8 --context-size 4096",
+    "llama_completion_tokens": 768,
+    "mistral_inference_url": "http://127.0.0.1:8081",
+    "mistral_inference_model": "Mistral-7B-v0.3.Q4_K_M.gguf",
+    "mistral_inference_timeout": 60.0,
+    "hormone_model_path": "config/hormone_model.json",
+    "controller_policy_path": "config/controller_policy.json"
+}

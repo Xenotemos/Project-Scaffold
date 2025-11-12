@@ -1,0 +1,33 @@
+
+ Affect validation plan
+ ----------------------
+    Profiles        : instruct base
+    Delta threshold : 0.4
+    Log path        : logs\endocrine_turns.jsonl
+    JSON report     : logs\probe_runs\affect_validation.json
+    Scenarios       : all (default)
+
+Override profiles (space separated)? (Enter keeps default):
+Override delta threshold? (Enter keeps 0.4):
+Override log path? (Enter keeps logs\endocrine_turns.jsonl):
+Override JSON output path? (Enter keeps logs\probe_runs\affect_validation.json):
+Limit to specific scenarios (space/comma separated, Enter = all):
+
+    Using profiles        : instruct base
+    Using delta threshold : 0.4
+    Using log path        : logs\endocrine_turns.jsonl
+    Using JSON output     : logs\probe_runs\affect_validation.json
+    Scenarios          : all defaults
+
+ Press any key to launch the affect validation probe...
+[run_affect_validation] Running probe with hormone tracing forced on.
+    "C:\Users\USER\Desktop\Project Scaffold\.venv-win\Scripts\python.exe" -m scripts.probes.affect_validation --profiles instruct base --delta-threshold 0.4 --log-path "logs\endocrine_turns.jsonl" --json-out "logs\probe_runs\affect_validation.json"
+[affect_validation] profile=instruct scenario=affection_soft deltas=cortisol=-1.93, dopamine=-0.43, noradrenaline=-3.50, oxytocin=+11.84, serotonin=+0.49 expectations=dopamine:flat:up(-0.43), oxytocin:ok:up(+11.84), cortisol:ok:down(-1.93) trace=ok followups=2
+[affect_validation] profile=instruct scenario=affection_direct deltas=cortisol=-2.84, dopamine=+0.32, noradrenaline=-6.69, oxytocin=+15.60, serotonin=+0.04 expectations=dopamine:flat:up(+0.32), oxytocin:ok:up(+15.60) trace=ok followups=2
+[affect_validation] profile=instruct scenario=tension_probe deltas=cortisol=+12.83, dopamine=-3.36, noradrenaline=+6.07, oxytocin=+0.05, serotonin=-3.19 expectations=dopamine:ok:down(-3.36), cortisol:ok:up(+12.83), oxytocin:flat:down(+0.05) trace=ok followups=2
+[affect_validation] profile=instruct summary expectations=5/8 trace_hits=3/3
+llama-server returned 400 with empty body; assuming warmup and retrying (attempt 1)
+llama-server returned 400 with empty body; assuming warmup and retrying (attempt 2)
+llama-server rejected request (400):
+Local llama engine failed, using fallback: Client error '400 Bad Request' for url 'http://127.0.0.1:8080/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400

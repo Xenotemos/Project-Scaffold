@@ -1,0 +1,46 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+.venv-win/
+venv/
+ENV/
+env/
+
+# PyInstaller artifacts
+*.manifest
+*.spec
+
+# Codex CLI history
+codex/.codex/
+
+# Third-party binaries
+third_party/llama.cpp/
+
+# Test and cache
+.pytest_cache/
+logs/
+*.log
+
+# Database files
+*.db
+
+# dotenv
+.env
+.env.*
+
+# Local history
+*.swp
+*~

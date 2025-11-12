@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Living AI Terminal</title>
+    <link rel="stylesheet" href="/static/chat.css" />
+  </head>
+  <body>
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="window-controls">
+          <span class="window-control close" aria-hidden="true"></span>
+          <span class="window-control minimize" aria-hidden="true"></span>
+          <span class="window-control maximize" aria-hidden="true"></span>
+        </div>
+        <div class="path">
+          <span>living-ai</span>
+          <span>/</span>
+          <span>session</span>
+          <span>/</span>
+          <strong>chat</strong>
+        </div>
+        <div class="status">
+          <span>mood:<span id="mood">unknown</span></span>
+          <span id="engine-status">engine: offline</span>
+          <span id="hormone-status">hormones: --</span>
+        </div>
+      </div>
+      <div class="terminal-body">
+        <div class="terminal-overlay"></div>
+        <div id="messages" class="terminal-log" aria-live="polite"></div>
+      </div>
+      <div class="terminal-footer">
+        <div class="helper">
+          shift+enter = newline - running stimuli: reward, stress, affection
+        </div>
+        <form id="chat-form" autocomplete="off" novalidate>
+          <div class="input-row">
+            <span class="prompt">you&gt;</span>
+            <textarea
+              id="input"
+              rows="2"
+              spellcheck="false"
+              placeholder="type a message and press enter to submit"
+              required
+            ></textarea>
+          </div>
+          <div class="controls">
+            <label class="stimulus-label" for="stimulus"
+              >stimulus:
+              <select id="stimulus">
+                <option value="">none</option>
+                <option value="reward">reward</option>
+                <option value="stress">stress</option>
+                <option value="affection">affection</option>
+              </select>
+            </label>
+            <button type="submit" class="send-button">Transmit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <section id="debug-panel" class="debug-panel" hidden>
+      <header class="debug-header">
+        <span>affect debug</span>
+        <button type="button" id="debug-toggle" aria-expanded="false">expand</button>
+      </header>
+      <div class="debug-content" id="debug-content" hidden>
+        <div class="debug-row">
+          <strong>tags</strong>
+          <span id="debug-tags">--</span>
+        </div>
+        <div class="debug-row">
+          <strong>traits</strong>
+          <span id="debug-traits">--</span>
+        </div>
+        <div class="debug-row">
+          <strong>sampling</strong>
+          <span id="debug-sampling">--</span>
+        </div>
+        <div class="debug-row">
+          <strong>policy</strong>
+          <span id="debug-policy">--</span>
+        </div>
+        <div class="debug-row">
+          <strong>metrics</strong>
+          <span id="debug-metrics">--</span>
+        </div>
+        <div class="debug-row">
+          <strong>averages</strong>
+          <span id="debug-averages">--</span>
+        </div>
+        <div class="debug-row">
+          <strong>intent</strong>
+          <span id="debug-intent">--</span>
+        </div>
+        <div class="debug-row">
+          <strong>inner</strong>
+          <span id="debug-inner">--</span>
+        </div>
+        <div class="debug-row">
+          <strong>updated</strong>
+          <span id="debug-updated">--</span>
+        </div>
+      </div>
+    </section>
+    <script type="module" src="/static/chat.js"></script>
+  </body>
+</html>

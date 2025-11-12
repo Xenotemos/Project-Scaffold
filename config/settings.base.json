@@ -1,0 +1,17 @@
+{
+    "llm_endpoint": "",
+    "llm_timeout": 30.0,
+    "mistral_inference_url": "",
+    "mistral_inference_model": "",
+    "mistral_inference_timeout": 60.0,
+    "mistral_inference_api_key": "",
+    "llama_server_bin": "third_party/llama.cpp/build/bin/Release/llama-server.exe",
+    "llama_model_path": "D:/AI/LLMs/Mistral-7B-v0.3.Q4_K_M.gguf",
+    "llama_model_alias": "mistral-base",
+    "llama_server_args": "--ctx-size 4096 --no-webui",
+    "llama_completion_tokens": 768,
+    "llama_server_ready_timeout": 120,
+    "llama_server_timeout": 60,
+    "hormone_model_path": "config/hormone_model.json",
+    "controller_policy_path": "config/controller_policy.json"
+}
