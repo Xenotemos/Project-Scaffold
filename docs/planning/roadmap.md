@@ -1,5 +1,11 @@
 # Roadmap Cascade
 
+## Gemini Report Follow-Ups
+- TODO (Gemini) Carve the remaining persona/memory/event orchestration out of `main.py`, keeping the entrypoint focused on FastAPI wiring and top-level coordination.
+- COMPLETED (Gemini) Reconnect the `memory.selector` heuristics to request context by promoting spotlighted memories + previews into the chat context and runtime state.
+- COMPLETED (Gemini) Deduplicate `_derive_mood` vs. `hormones.hormones.derive_mood` so there is a single source of truth for endocrine-to-mood mapping.
+- COMPLETED (Gemini) Formalize configuration loading (centralize profile + settings resolution via `app.config`) to shrink the ad-hoc env/JSON mixing that gemini flagged.
+
 ## Priority Horizon (v0.17.x)
 - **Voice guard rollout**: replace persona prose with state surfaces, wire penalty and regeneration loops for helper phrasing, and persist guard verdicts to `logs/voice_guard.jsonl`.
 - **Affect-aware embodiment rollout**:
@@ -8,8 +14,8 @@
   3. COMPLETED Hormone-to-decoder map – runtime reads `config/hormone_style_map.json`, applies per-hormone sampling overrides, and logs the bands hit each turn.
   4. COMPLETED Behavioral response surfaces – affect-driven sampling overrides loosen or tighten cadence (max tokens, temperature, bias scales) for affectionate vs. tense turns.
   5. COMPLETED Self-narration channel – hormone traces roll into a persistent internal note injected into persona/memory and heuristic replies so the assistant references felt state, not just metrics.
-  6. **Assistant drift gating**: strengthen helper-tone suppression by adding pre-sampler penalties/negative logits for the helper lexicon, wire the drift detector to force regeneration when those phrases slip through, and persist each intervention to `logs/voice_guard.jsonl` for later tuning.
-  7. **Closed-loop probes & CI**: extend `scripts/ci_sanity.py` (or a sibling task) to call the new affection/stress probes, assert that hormone deltas cross configured thresholds, and diff style metrics so regressions fail fast in automation.
+  6. COMPLETED Assistant drift gating – helper-tone penalties now apply inside the sampler (`app/sampling.apply_helper_tone_bias`), VoiceGuard regenerations boost the penalty scale on every flagged turn, and we persist each verdict in `logs/voice_guard.jsonl` plus the telemetry snapshots.
+  7. **Closed-loop probes & CI**: extend `scripts/ci_sanity.py` (or a sibling task) to parse the affect-validation JSON summaries, assert that hormone deltas cross configured thresholds, and diff style metrics so regressions fail fast in automation. (Probe + affect harnesses already run in CI, but they do not yet enforce numeric gates.)
   8. **Persona fine-tuning**: once the instrumentation is trustworthy, harvest transcripts that exhibit the desired entity voice, curate counter-examples of helper tone, and fine-tune an adapter/LoRA head so the base model internalizes the affect-aware style instead of relying solely on runtime clamps.
 
 - **Mid-span behavioural fine-tuning**:

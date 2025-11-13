@@ -29,6 +29,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.controller import (  # noqa: E402
+    build_controller_feature_map,
+    gather_active_tags,
+    run_controller_policy,
+)
+from app.config import current_profile  # noqa: E402
+
 CANARY_PROFILES = (
     ("instruct", "settings.json"),
     ("base", "settings.base.json"),
@@ -280,9 +287,10 @@ def check_memory_coupling() -> StatusTuple:
 
 def check_reinforcement() -> StatusTuple:
     try:
-        from brain.reinforcement import score_response
+        from brain.reinforcement import ReinforcementTracker, score_response
 
-        scores = score_response("I am sad", "I feel calmer after breathing")
+        tracker = ReinforcementTracker()
+        scores = score_response("I am sad", "I feel calmer after breathing", tracker=tracker)
         metadata = {key: scores.get(key) for key in scores}
         required = {
             "valence_delta",
@@ -298,6 +306,125 @@ def check_reinforcement() -> StatusTuple:
             metadata["missing"] = missing
             return _status_chk("score keys missing", metadata)
         return _status_ok("reinforcement scores computed", metadata)
+    except Exception as exc:
+        return _status_err(f"{exc.__class__.__name__}: {exc}")
+
+
+def check_persona_helpers() -> StatusTuple:
+    try:
+        from app.persona import build_persona_snapshot, compose_heuristic_reply
+        from state_engine import StateEngine
+
+        engine = StateEngine()
+        engine.register_event("diagnostic reflection", strength=0.6, stimulus_type="reward")
+        snapshot = build_persona_snapshot(engine)
+        memory_manager = engine.memory_manager
+        memory_context = {
+            "summary": memory_manager.summarize_recent(),
+            "working": memory_manager.working_snapshot(),
+            "internal_reflections": ["I noted the way my ribs eased when they reached out."],
+            "long_term": [],
+        }
+
+        def _shorten(text: str, limit: int) -> str:
+            text = (text or "").strip()
+            if len(text) <= limit:
+                return text
+            shortened = text[: limit - 3].rsplit(" ", 1)[0]
+            return f"{shortened}..."
+
+        context = {
+            "persona": snapshot,
+            "memory": memory_context,
+            "self_note": "My shoulders keep loosening when I listen closely.",
+        }
+        length_plan = {"label": "concise", "hint": "Keep it intimate and brief."}
+        reply = compose_heuristic_reply(
+            "diagnostic ping about my breathing",
+            context=context,
+            intent="reflective",
+            length_plan=length_plan,
+            state_engine=engine,
+            shorten=_shorten,
+        )
+        metadata = {
+            "instructions": len(snapshot.get("instructions", [])),
+            "memory_summary": memory_context.get("summary"),
+            "reply_excerpt": reply[:120],
+        }
+        if not reply.strip():
+            return _status_chk("persona helper returned an empty reply", metadata)
+        if "diagnostic" not in reply.lower():
+            return _status_chk("persona helper dropped user content", metadata)
+        return _status_ok("persona helpers responsive", metadata)
+    except Exception as exc:
+        return _status_err(f"{exc.__class__.__name__}: {exc}")
+
+
+def check_telemetry_helpers() -> StatusTuple:
+    try:
+        from app.telemetry import compose_live_status, compose_turn_telemetry, write_telemetry_snapshot
+        from app.runtime import RuntimeState
+        from state_engine import StateEngine
+
+        engine = StateEngine()
+        runtime_state = RuntimeState()
+        live_status = compose_live_status(
+            state_engine=engine,
+            runtime_state=runtime_state,
+            model_alias="diagnostic",
+            local_llama_available=False,
+        )
+
+        def _shorten(text: str, limit: int) -> str:
+            text = (text or "").strip()
+            if len(text) <= limit:
+                return text
+            shortened = text[: limit - 3].rsplit(" ", 1)[0]
+            return f"{shortened}..."
+
+        context = {
+            "mood": engine.state.get("mood"),
+            "hormones": engine.hormone_system.get_state(),
+            "memory": {
+                "summary": "diagnostic memory",
+                "working": [],
+                "long_term": [],
+            },
+            "affect": {"traits": {"warmth": 0.3}, "tags": ["calm"]},
+            "sampling_policy_preview": {"label": "diagnostic"},
+        }
+        sampling = {"temperature": 0.82, "top_p": 0.9, "max_tokens": 256}
+        snapshot = {
+            "timestamp": live_status["timestamp"],
+            "profile": live_status["profile"],
+            "sampling": dict(sampling),
+            "policy_preview": {"label": "diagnostic"},
+        }
+        telemetry = compose_turn_telemetry(
+            context=context,
+            sampling=sampling,
+            snapshot=snapshot,
+            state_engine=engine,
+            shorten=_shorten,
+            model_alias="diagnostic",
+        )
+        temp_path = ROOT / "logs" / "diagnostic_snapshot.json"
+        write_telemetry_snapshot(telemetry, temp_path, logger=None)
+        metadata = {
+            "live_status_keys": sorted(list(live_status.keys())),
+            "telemetry_keys": sorted(list(telemetry.keys())),
+            "snapshot_written": temp_path.exists(),
+        }
+        if temp_path.exists():
+            try:
+                data = temp_path.read_text(encoding="utf-8")
+                metadata["snapshot_excerpt"] = data[:120]
+            finally:
+                temp_path.unlink(missing_ok=True)
+        if not metadata["snapshot_written"]:
+            return _status_chk("telemetry snapshot was not written to disk", metadata)
+        return _status_ok("telemetry helpers produced output", metadata)
     except Exception as exc:
         return _status_err(f"{exc.__class__.__name__}: {exc}")
 
@@ -576,9 +703,14 @@ def check_reinforcement_log_health() -> StatusTuple:
 def check_endocrine_handshake() -> StatusTuple:
     try:
         import main  # type: ignore
-        from brain.reinforcement import score_response
+        from brain.reinforcement import ReinforcementTracker, score_response
 
-        reinforcement = score_response("I feel restless", "I notice my shoulders loosening while I breathe")
+        tracker = ReinforcementTracker()
+        reinforcement = score_response(
+            "I feel restless",
+            "I notice my shoulders loosening while I breathe",
+            tracker=tracker,
+        )
         traits = main.state_engine.trait_snapshot()
         if traits is None:
             main.state_engine.register_event("diagnostic endocrine handshake", hormone_deltas={"serotonin": 1.2})
@@ -592,7 +724,7 @@ def check_endocrine_handshake() -> StatusTuple:
                 reinforcement,
                 intent="reflective",
                 length_label="concise",
-                profile=main._current_profile(),  # type: ignore[attr-defined]
+                profile=current_profile(),
             )
             metadata["predicted"] = predicted
             if not predicted:
@@ -618,19 +750,29 @@ def check_controller_handshake() -> StatusTuple:
         )
         hormones = context.get("hormones", {})
         traits = main.state_engine.trait_snapshot()
-        tags = main._gather_active_tags()  # type: ignore[attr-defined]
-        features = main._build_controller_feature_map(  # type: ignore[attr-defined]
+        tags = gather_active_tags(main.state_engine)
+        features = build_controller_feature_map(
+            state_engine=main.state_engine,
+            runtime_state=main.runtime_state,
             traits=traits,
             hormones=hormones,
             intent=intent_prediction.intent,
             length_label=length_plan.get("label"),
-            profile=main._current_profile(),  # type: ignore[attr-defined]
+            profile=current_profile(),
             tags=tags,
         )
-        result = main._run_controller_policy(features, tags)  # type: ignore[attr-defined]
+        result = run_controller_policy(
+            main.CONTROLLER_RUNTIME,  # type: ignore[attr-defined]
+            main.CONTROLLER_LOCK,  # type: ignore[attr-defined]
+            main.runtime_state,  # type: ignore[attr-defined]
+            features,
+            tags,
+        )
         runtime = main.CONTROLLER_RUNTIME  # type: ignore[attr-defined]
         if runtime is not None:
             runtime.reset()
+        if result is None:
+            return _status_chk("controller runtime unavailable", {"input_size": len(features)})
         metadata = {
             "input_size": len(features),
             "adjustments": result.adjustments,
@@ -703,7 +845,9 @@ DIAGNOSTICS: Iterable[Diagnostic] = (
     Diagnostic("LLM client", "brain/llm_client.py", check_llm_client),
     Diagnostic("Hormone system", "hormones/hormones.py", check_hormone_system),
     Diagnostic("Memory coupling", "state_engine/engine.py", check_memory_coupling),
+    Diagnostic("Persona helpers", "app/persona.py", check_persona_helpers),
     Diagnostic("Reinforcement scoring", "brain/reinforcement.py", check_reinforcement),
+    Diagnostic("Telemetry helpers", "app/telemetry.py", check_telemetry_helpers),
     Diagnostic("Canary probes", "profiles (instruct/base)", check_canary_probes),
     Diagnostic("Hormone model", "config/hormone_model.json", check_hormone_model, repair_hormone_model),
     Diagnostic("Controller policy", "config/controller_policy.json", check_controller_policy, repair_controller_policy),

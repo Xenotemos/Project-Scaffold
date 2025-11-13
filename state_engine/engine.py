@@ -6,7 +6,7 @@ import random
 from datetime import datetime, timezone
 from typing import Any
 
-from hormones import HormoneSystem
+from hormones import HormoneSystem, classify_mood
 from memory import MemoryManager
 from .affect import AffectState, TraitSnapshot, integrate_traits, traits_to_tags
 
@@ -39,7 +39,7 @@ class StateEngine:
         self.memory_manager.record_event(
             content="system initialized",
             strength=0.6,
-            mood=self._derive_mood(),
+            mood=self._current_mood(),
             hormone_snapshot=self.hormone_system.get_state(),
             endocrine_trace=self._endocrine_trace(),
         )
@@ -55,7 +55,7 @@ class StateEngine:
             self.memory_manager.record_event(
                 content="internal check-in: I pause to notice breath, pulse, and tension without forcing a response",
                 strength=0.4,
-                mood=self._derive_mood(),
+                mood=self._current_mood(),
                 hormone_snapshot=self.hormone_system.get_state(),
                 endocrine_trace=self._endocrine_trace(),
             )
@@ -75,7 +75,7 @@ class StateEngine:
             self.hormone_system.apply_stimulus(stimulus_type)
         if hormone_deltas:
             self.hormone_system.apply_deltas(hormone_deltas)
-        current_mood = mood or self._derive_mood()
+        current_mood = mood or self._current_mood()
         self._apply_sentiment_feedback(content)
         self.memory_manager.record_event(
             content=content,
@@ -140,7 +140,7 @@ class StateEngine:
 
     def _compose_state(self) -> dict[str, Any]:
         """Build the broadcastable state payload."""
-        mood = self._derive_mood()
+        mood = self._current_mood()
         timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
         self._update_traits()
         return {
@@ -153,22 +153,6 @@ class StateEngine:
             "affect": self.affect_overview(),
         }
 
-    def _derive_mood(self) -> str:
-        """Compute the mood label using the defined hierarchy."""
-        hormones = self.hormone_system.get_state()
-        dopamine = hormones["dopamine"]
-        serotonin = hormones["serotonin"]
-        cortisol = hormones["cortisol"]
-        oxytocin = hormones["oxytocin"]
-
-        if cortisol > 65:
-            return "stressed"
-        if dopamine > 70 and serotonin > 60:
-            return "happy"
-        if oxytocin > 60:
-            return "affectionate"
-        return "neutral"
-
     def _inject_environmental_noise(self) -> None:
         """Apply subtle random noise and time-based fluctuations."""
         noise = lambda scale=1.0: random.uniform(-self._noise_amplitude, self._noise_amplitude) * scale
@@ -180,6 +164,10 @@ class StateEngine:
             "noradrenaline": noise(1.1),
         }
         self.hormone_system.apply_deltas(deltas)
+
+    def _current_mood(self) -> str:
+        """Compute mood from the latest hormone snapshot."""
+        return classify_mood(self.hormone_system.get_state())
 
     def _apply_sentiment_feedback(self, content: str) -> None:
         """Adjust hormones based on simple sentiment cues from content."""

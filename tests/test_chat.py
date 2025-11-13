@@ -15,8 +15,9 @@ else:  # pragma: no cover
     HTTPX_IMPORT_ERROR = None
 
 import main
+from app.sampling import apply_intent_sampling, plan_response_length, sampling_params_from_hormones
 from brain.intent_router import predict_intent
-from brain.reinforcement import score_response
+from brain.reinforcement import ReinforcementTracker, score_response
 
 
 class StubStreamEngine:
@@ -299,19 +300,46 @@ class SamplingParamTests(unittest.TestCase):
     def test_dopamine_surging_increases_temperature(self) -> None:
         hormones = dict(self.baseline)
         hormones["dopamine"] = 90.0  # triggers surging status
-        params, _ = main._sampling_params_from_hormones(hormones)
+        params, _ = sampling_params_from_hormones(
+            hormones,
+            base_temperature=main.BASE_TEMPERATURE,
+            base_top_p=main.BASE_TOP_P,
+            base_frequency_penalty=main.BASE_FREQUENCY_PENALTY,
+            hormone_style_map=main.HORMONE_STYLE_MAP,
+            max_completion_tokens=main.LLAMA_COMPLETION_TOKENS,
+        )
         self.assertGreater(params["temperature"], main.BASE_TEMPERATURE)
         self.assertGreater(params["top_p"], main.BASE_TOP_P)
 
     def test_low_noradrenaline_reduces_frequency_penalty(self) -> None:
         hormones = dict(self.baseline)
         hormones["noradrenaline"] = 20.0  # triggers crashing status
-        params, _ = main._sampling_params_from_hormones(hormones)
+        params, _ = sampling_params_from_hormones(
+            hormones,
+            base_temperature=main.BASE_TEMPERATURE,
+            base_top_p=main.BASE_TOP_P,
+            base_frequency_penalty=main.BASE_FREQUENCY_PENALTY,
+            hormone_style_map=main.HORMONE_STYLE_MAP,
+            max_completion_tokens=main.LLAMA_COMPLETION_TOKENS,
+        )
         self.assertLess(params["frequency_penalty"], main.BASE_FREQUENCY_PENALTY)
 
     def test_intent_sampling_override_narrative(self) -> None:
-        sampling, _ = main._sampling_params_from_hormones(self.baseline)
-        adjusted = main._apply_intent_sampling(sampling, "narrative")
+        sampling, _ = sampling_params_from_hormones(
+            self.baseline,
+            base_temperature=main.BASE_TEMPERATURE,
+            base_top_p=main.BASE_TOP_P,
+            base_frequency_penalty=main.BASE_FREQUENCY_PENALTY,
+            hormone_style_map=main.HORMONE_STYLE_MAP,
+            max_completion_tokens=main.LLAMA_COMPLETION_TOKENS,
+        )
+        adjusted = apply_intent_sampling(
+            sampling,
+            "narrative",
+            base_temperature=main.BASE_TEMPERATURE,
+            base_top_p=main.BASE_TOP_P,
+            base_frequency_penalty=main.BASE_FREQUENCY_PENALTY,
+        )
         self.assertGreater(adjusted["temperature"], sampling["temperature"])
         self.assertGreater(adjusted["top_p"], sampling["top_p"])
 
@@ -322,15 +350,18 @@ class ResponseLengthPlannerTests(unittest.TestCase):
     """Ensure the length planner selects sensible profiles."""
 
     def test_greeting_maps_to_brief(self) -> None:
-        plan = main._plan_response_length("hello there", "emotional")
+        plan = plan_response_length("hello there", "emotional")
         self.assertEqual(plan["label"], "brief")
 
     def test_long_request_maps_to_detailed(self) -> None:
-        plan = main._plan_response_length("Can you explain all the steps involved in configuring the monitoring pipeline?", "analytical")
+        plan = plan_response_length(
+            "Can you explain all the steps involved in configuring the monitoring pipeline?",
+            "analytical",
+        )
         self.assertEqual(plan["label"], "detailed")
 
     def test_default_is_concise(self) -> None:
-        plan = main._plan_response_length("What is the status?", "analytical")
+        plan = plan_response_length("What is the status?", "analytical")
         self.assertEqual(plan["label"], "concise")
 
 class IntentRouterTests(unittest.TestCase):
@@ -350,15 +381,22 @@ class ReinforcementHeuristicsTests(unittest.TestCase):
     """Score response heuristics should behave consistently."""
 
     def test_score_response_valence_increase(self) -> None:
-        scores = score_response("I am sad", "I am hopeful and calm")
+        tracker = ReinforcementTracker()
+        scores = score_response("I am sad", "I am hopeful and calm", tracker=tracker)
         self.assertGreater(scores["valence_delta"], 0)
 
     def test_score_response_length_ratio(self) -> None:
-        scores = score_response("short question?", "Providing a more detailed answer with several points.")
+        tracker = ReinforcementTracker()
+        scores = score_response(
+            "short question?",
+            "Providing a more detailed answer with several points.",
+            tracker=tracker,
+        )
         self.assertGreater(scores["length_score"], 1.0)
 
     def test_score_response_engagement_entropy_bounds(self) -> None:
-        scores = score_response("Tell me", "word word word word")
+        tracker = ReinforcementTracker()
+        scores = score_response("Tell me", "word word word word", tracker=tracker)
         self.assertGreaterEqual(scores["engagement_score"], 0.0)
         self.assertLessEqual(scores["engagement_score"], 1.0)
 if __name__ == "__main__":

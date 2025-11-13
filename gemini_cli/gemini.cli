@@ -1,0 +1,8 @@
+Date: 2025-11-12
+File Modified: state_engine/engine.py
+
+Change Description:
+Refactored the `StateEngine` class to remove code duplication.
+The internal `_derive_mood` method, which was an exact copy of the `derive_mood` method in `HormoneSystem`, was removed.
+All calls to the internal method were replaced with calls to `self.hormone_system.derive_mood()`.
+This change improves maintainability by ensuring the mood derivation logic exists in only one place.

@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
+from dataclasses import dataclass
 from typing import Dict
 
 from brain.voice_guard import HELPER_PHRASES, REPETITIVE_PHRASES as VOICE_GUARD_REPETITIVE_PHRASES
@@ -165,7 +166,11 @@ _CONTEXT_STOPWORDS = {
     "when",
     "where",
 }
-OUTWARD_STREAK = 0
+
+
+@dataclass
+class ReinforcementTracker:
+    outward_streak: int = 0
 
 
 def _normalize_focus_token(token: str) -> str:
@@ -460,10 +465,9 @@ def _entropy(tokens: list[str]) -> float:
     return entropy / max_entropy if max_entropy > 0 else 0.0
 
 
-def reset_outward_streak() -> None:
+def reset_outward_streak(tracker: ReinforcementTracker) -> None:
     """Clear the running outward-attention streak counter."""
-    global OUTWARD_STREAK
-    OUTWARD_STREAK = 0
+    tracker.outward_streak = 0
 
 
 def _first_content_token(tokens: list[str]) -> str:
@@ -475,11 +479,14 @@ def _first_content_token(tokens: list[str]) -> str:
     return tokens[0] if tokens else ""
 
 
-def _outward_focus_streak(user_tokens: list[str], reply_tokens: list[str]) -> float:
+def _outward_focus_streak(
+    user_tokens: list[str],
+    reply_tokens: list[str],
+    tracker: ReinforcementTracker,
+) -> float:
     """Reward consecutive outward openings that reference the user's context."""
-    global OUTWARD_STREAK
     if not reply_tokens:
-        OUTWARD_STREAK = 0
+        tracker.outward_streak = 0
         return 0.0
     lead_token = _first_content_token(reply_tokens)
     primary_open = lead_token in SECOND_PRONOUNS or lead_token in COLLECTIVE_PRONOUNS
@@ -488,12 +495,12 @@ def _outward_focus_streak(user_tokens: list[str], reply_tokens: list[str]) -> fl
         token in SECOND_PRONOUNS or token in COLLECTIVE_PRONOUNS for token in early_window
     )
     if not primary_open and not early_outward:
-        OUTWARD_STREAK = 0
+        tracker.outward_streak = 0
         return 0.0
     reply_window = reply_tokens[:14]
     mentions_you = any(token in SECOND_PRONOUNS for token in reply_window)
     if not mentions_you:
-        OUTWARD_STREAK = 0
+        tracker.outward_streak = 0
         return 0.0
     user_context = {
         _normalize_focus_token(token)
@@ -508,10 +515,10 @@ def _outward_focus_streak(user_tokens: list[str], reply_tokens: list[str]) -> fl
             context_overlap = True
     outward_turn = context_overlap
     if outward_turn:
-        OUTWARD_STREAK = min(OUTWARD_STREAK + 1, 4)
+        tracker.outward_streak = min(tracker.outward_streak + 1, 4)
     else:
-        OUTWARD_STREAK = 0
-    return min(1.0, OUTWARD_STREAK / 3.0)
+        tracker.outward_streak = 0
+    return min(1.0, tracker.outward_streak / 3.0)
 
 
 def _authenticity_score(
@@ -617,8 +624,14 @@ def _self_preoccupation(reply: str) -> float:
     return max(0.0, min(score, 1.0))
 
 
-def score_response(user_message: str, ai_reply: str) -> Dict[str, float]:
+def score_response(
+    user_message: str,
+    ai_reply: str,
+    *,
+    tracker: ReinforcementTracker | None = None,
+) -> Dict[str, float]:
     """Score a response using heuristic reinforcement metrics."""
+    tracker = tracker or ReinforcementTracker()
     user_tokens = _tokenise(user_message)
     reply_tokens = _tokenise(ai_reply)
     user_sentiment = _sentiment_score(user_message)
@@ -635,7 +648,7 @@ def score_response(user_message: str, ai_reply: str) -> Dict[str, float]:
 
     engagement_score = _entropy(reply_tokens)
 
-    outward_streak = _outward_focus_streak(user_tokens, reply_tokens)
+    outward_streak = _outward_focus_streak(user_tokens, reply_tokens, tracker)
     self_focus = _self_preoccupation(ai_reply)
     authenticity = _authenticity_score(ai_reply, outward_streak, self_focus)
     assistant_drift = _assistant_drift(ai_reply)
@@ -654,7 +667,7 @@ def score_response(user_message: str, ai_reply: str) -> Dict[str, float]:
     }
 
 
-__all__ = ["score_response", "reset_outward_streak"]
+__all__ = ["score_response", "reset_outward_streak", "ReinforcementTracker"]
 
 
 

@@ -108,19 +108,7 @@ class HormoneSystem:
 
     def derive_mood(self) -> str:
         """Derive a coarse mood label from the current hormone balance."""
-        state = self.get_state()
-        dopamine = state["dopamine"]
-        serotonin = state["serotonin"]
-        cortisol = state["cortisol"]
-        oxytocin = state["oxytocin"]
-
-        if cortisol > 65:
-            return "stressed"
-        if dopamine > 70 and serotonin > 60:
-            return "happy"
-        if oxytocin > 60:
-            return "affectionate"
-        return "neutral"
+        return classify_mood(self.get_state())
 
     def _set_level(self, name: str, value: float) -> None:
         """Clamp hormone levels to the 0-100 range."""
@@ -128,4 +116,20 @@ class HormoneSystem:
         setattr(self._levels, name, clamped)
 
 
-__all__ = ["HormoneLevels", "HormoneSystem"]
+def classify_mood(state: Mapping[str, float]) -> str:
+    """Derive a coarse mood label from an arbitrary hormone snapshot."""
+    dopamine = float(state.get("dopamine", 50.0))
+    serotonin = float(state.get("serotonin", 50.0))
+    cortisol = float(state.get("cortisol", 50.0))
+    oxytocin = float(state.get("oxytocin", 50.0))
+
+    if cortisol > 65:
+        return "stressed"
+    if dopamine > 70 and serotonin > 60:
+        return "happy"
+    if oxytocin > 60:
+        return "affectionate"
+    return "neutral"
+
+
+__all__ = ["HormoneLevels", "HormoneSystem", "classify_mood"]
