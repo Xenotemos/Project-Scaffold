@@ -1,0 +1,20 @@
+PS C:\Users\USER\Desktop\Project Scaffold\fine_tune> python train_affect_lora.py
+Generating train split: 4000 examples [00:00, 463113.59 examples/s]
+Map: 100%|████████████████████████████████████████████████████████████████| 3600/3600 [00:00<00:00, 4569.80 examples/s]
+Map: 100%|██████████████████████████████████████████████████████████████████| 400/400 [00:00<00:00, 4004.27 examples/s]
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards: 100%|█████████████████████████████████████████████████████████| 2/2 [00:40<00:00, 20.02s/it]
+Starting epoch 1/1
+step 10: loss=2.9922
+step 20: loss=2.0939
+step 30: loss=1.5566
+step 40: loss=1.2402
+step 50: loss=0.8545
+step 60: loss=0.6665
+step 70: loss=0.5120
+step 80: loss=0.4533
+step 90: loss=0.4943
+step 100: loss=0.4114
+step 110: loss=0.3887
+epoch 1 evaluation loss: 0.4857
+PS C:\Users\USER\Desktop\Project Scaffold\fine_tune>

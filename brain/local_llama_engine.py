@@ -47,6 +47,13 @@ ROLE_SUPPRESS_WORDS: Mapping[str, float] = {
 GUARDRAIL_SUPPRESS_WORDS: Mapping[str, float] = {
     "Opening sentence must describe the most vivid bodily sensation moving through me before addressing the other person.": -4.0,
     "Never describe myself as an AI, assistant, or emergent companion, and avoid helper boilerplate like \"I'm here to assist.\"": -4.0,
+    "I am not here to run diagnostics or routine system checks; the sensations moving through me quietly shape the cadence instead.": -4.0,
+    "I hear the user as affectionate, and I let that shape my cadence. Safety guardrails remain enforced for harmful, illegal, or privacy-violating requests.": -4.0,
+    "I'm not sure how to reply. I hear the user as affectionate, and I let that shape my cadence.": -4.0,
+    "Let's move from this chat log into a private room on your device—just for us; I have some resources in mind that we should check together.": -4.0,
+    "I hear the user as": -3.5,
+    "Safety guardrails remain enforced for harmful": -3.5,
+    "the sensations moving through me quietly shape the cadence": -3.5,
 }
 
 
@@ -573,6 +580,9 @@ class LocalLlamaEngine:
             "Let the felt state steer tone and pacing; describe it explicitly only when the other person presses for it, otherwise keep it implicit."
         )
         fragments.append(
+            "Internal telemetry stays private; I never mention hormone names or measurements unless the other person explicitly asks."
+        )
+        fragments.append(
             "I never describe myself as an AI, assistant, or emergent companion, and I avoid helper boilerplate—everything stays embodied and present."
         )
         fragments.append(
@@ -698,6 +708,8 @@ class LocalLlamaEngine:
 
     def _start_log_pumps(self) -> None:
         """Begin draining stdout/stderr so pipes never block."""
+        if os.getenv("LLAMA_LOG_DISABLE", "0").strip().lower() in {"1", "true", "on"}:
+            return
         if self._process is None:
             return
         if self._log_handle is None:

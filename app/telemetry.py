@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
@@ -13,6 +14,8 @@ from state_engine import StateEngine
 from app.config import current_profile
 from app.constants import METRIC_THRESHOLDS
 from app.runtime import RuntimeState
+
+WEBUI_LOG_MAX_LINES = int(os.getenv("WEBUI_LOG_MAX_LINES", "400"))
 
 
 def log_json_line(
@@ -31,6 +34,21 @@ def log_json_line(
     except Exception as exc:  # pragma: no cover - diagnostics only
         if logger:
             logger.debug("Failed to append json line to %s: %s", path, exc)
+
+
+def _truncate_log_file(path: Path, *, max_lines: int) -> None:
+    if max_lines <= 0 or not path.exists():
+        return
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            lines = handle.readlines()
+        if len(lines) <= max_lines:
+            return
+        trimmed = lines[-max_lines:]
+        with path.open("w", encoding="utf-8") as handle:
+            handle.writelines(trimmed)
+    except Exception:
+        return
 
 
 def log_sampling_snapshot(
@@ -191,6 +209,8 @@ def log_webui_interaction(
         payload["hormones"] = (telemetry.get("pre") or {}).get("hormones")
     log_json_line(path, payload, logger=logger)
     log_webui_interaction_pretty(payload, pretty_path, shorten=shorten, logger=logger)
+    _truncate_log_file(path, max_lines=WEBUI_LOG_MAX_LINES)
+    _truncate_log_file(pretty_path, max_lines=WEBUI_LOG_MAX_LINES)
 
 
 def log_webui_interaction_pretty(
@@ -291,6 +311,8 @@ def compose_turn_telemetry(
         "policy_preview": context.get("sampling_policy_preview"),
         "pre": pre_snapshot,
     }
+    if snapshot.get("affect_head"):
+        telemetry["affect_head"] = dict(snapshot["affect_head"])
     hormone_sampling = snapshot.get("hormone_sampling")
     if hormone_sampling:
         telemetry["hormone_sampling"] = hormone_sampling
@@ -352,6 +374,7 @@ def compose_live_status(
     runtime_state: RuntimeState,
     model_alias: str,
     local_llama_available: bool,
+    affect_head_snapshot: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compile telemetry data for dashboards and watchdogs."""
     state_payload = state_engine.get_state()
@@ -422,6 +445,7 @@ def compose_live_status(
         "controller": controller_payload,
         "controller_input": controller_input,
         "last_hormone_delta": dict(runtime_state.last_hormone_delta or {}),
+        "affect_head": dict(affect_head_snapshot or {}),
     }
 
 

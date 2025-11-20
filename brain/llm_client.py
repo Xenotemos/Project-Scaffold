@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any, TYPE_CHECKING
 
@@ -22,7 +23,9 @@ logger = logging.getLogger("living_ai.llm_client")
 class LivingLLMClient:
     """Lightweight wrapper around the living_llm `/chat` endpoint."""
 
-    def __init__(self, endpoint: str, *, timeout: float = 15.0) -> None:
+    RETRYABLE_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
+
+    def __init__(self, endpoint: str, *, timeout: float = 15.0, max_retries: int = 2) -> None:
         if httpx is None:  # pragma: no cover - runtime guard
             missing = HTTPX_IMPORT_ERROR or "httpx is not installed"
             raise RuntimeError(
@@ -31,6 +34,8 @@ class LivingLLMClient:
             )
         self._endpoint = endpoint.rstrip("/") or "http://localhost:8001/chat"
         self._client = httpx.AsyncClient(timeout=timeout)
+        self._max_retries = max(0, int(max_retries))
+        self._base_backoff = 0.4
 
     async def generate_reply(self, prompt: str, context: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         """Send a prompt with context and return the extracted reply plus raw payload."""
@@ -40,11 +45,49 @@ class LivingLLMClient:
             "stream": False,
         }
         logger.debug("Dispatching prompt to living_llm endpoint '%s'", self._endpoint)
-        response = await self._client.post(self._endpoint, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        reply_text = self._extract_reply(data.get("result"))
-        return reply_text, data
+        attempt = 0
+        last_exc: Exception | None = None
+        backoff = self._base_backoff
+        while True:
+            try:
+                response = await self._client.post(self._endpoint, json=payload)
+                response.raise_for_status()
+                data = response.json()
+                reply_text = self._extract_reply(data.get("result"))
+                return reply_text, data
+            except httpx.HTTPStatusError as exc:
+                status_code = exc.response.status_code
+                retryable = status_code in self.RETRYABLE_STATUS
+                logger.warning(
+                    "LLM bridge returned %s (retryable=%s attempt=%s/%s)",
+                    status_code,
+                    retryable,
+                    attempt + 1,
+                    self._max_retries + 1,
+                )
+                if retryable and attempt < self._max_retries:
+                    last_exc = exc
+                    await asyncio.sleep(backoff)
+                    backoff = min(backoff * 2, 4.0)
+                    attempt += 1
+                    continue
+                raise
+            except httpx.RequestError as exc:
+                logger.warning(
+                    "LLM bridge request error (attempt %s/%s): %s",
+                    attempt + 1,
+                    self._max_retries + 1,
+                    exc,
+                )
+                last_exc = exc
+                if attempt < self._max_retries:
+                    await asyncio.sleep(backoff)
+                    backoff = min(backoff * 2, 4.0)
+                    attempt += 1
+                    continue
+                raise
+        # Should never reach here
+        raise RuntimeError("LLM bridge failed") from last_exc
 
     async def aclose(self) -> None:
         """Close the underlying HTTP client."""

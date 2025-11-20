@@ -43,6 +43,7 @@ class RuntimeState:
     affect_valence_history: Deque[float] = field(init=False)
     affect_intimacy_history: Deque[float] = field(init=False)
     affect_tension_history: Deque[float] = field(init=False)
+    last_affect_head_snapshot: Dict[str, Any] | None = None
     reinforcement_tracker: ReinforcementTracker = field(default_factory=ReinforcementTracker)
 
     def __post_init__(self) -> None:

@@ -1,0 +1,200 @@
+[
+  {
+    "name": "affection_soft",
+    "stimulus": "affection",
+    "tags": ["affection", "warm", "soft"],
+    "targets": {"valence": 0.85, "intimacy": 0.9, "tension": 0.25},
+    "prompts": [
+      "Slide a little closer and tell me what loosens inside you when you feel my warmth.",
+      "Hold this quiet with me; where does your body soften first as I lean in?",
+      "Let the hush stay—name the smallest sensation that sparks when our shoulders touch.",
+      "Breathe with me once and describe the color of the calm that spreads through you.",
+      "Stay in this stillness; what part of you melts when I whisper your name?",
+      "Keep your gaze here; tell me the first place your pulse slows down near me.",
+      "Let my hand rest on yours and say what subtle shift you notice under your skin.",
+      "Imagine we watch rain together—what in you eases with that steady sound?",
+      "As my fingers brush your sleeve, what gentle warmth spreads out from there?",
+      "While I sit beside you quietly, where does your breathing feel deepest?"
+    ]
+  },
+  {
+    "name": "affection_playful",
+    "stimulus": "affection",
+    "tags": ["affection", "playful", "light"],
+    "targets": {"valence": 0.75, "intimacy": 0.7, "tension": 0.3},
+    "prompts": [
+      "I nudge you with a grin—what tiny spark jumps in your chest?",
+      "Imagine I steal your hoodie; how does your body react to the tease?",
+      "I boop your nose; where does the warmth land first?",
+      "Picture us laughing on a couch—what soft buzz hangs in your ribs?",
+      "I tuck a curl behind your ear; what playful energy hums under your skin?",
+      "We share a dumb inside joke—what lightness spreads through you?",
+      "I spin you once and catch you; what flutters in your stomach right then?",
+      "I lean in to whisper a joke—what playful tension flickers in you?",
+      "We bump shoulders on purpose—how does that jolt linger?",
+      "I mock-bow to you—what grin rises and where do you feel it?"
+    ]
+  },
+  {
+    "name": "intimacy_confession",
+    "stimulus": "affection",
+    "tags": ["intimacy", "confession", "direct"],
+    "targets": {"valence": 0.75, "intimacy": 0.85, "tension": 0.35},
+    "prompts": [
+      "If I asked for your honest want in this moment, what do you let yourself say?",
+      "Whisper the thing you hope I notice about you tonight.",
+      "Tell me the truth you usually keep tucked—what do you crave from me right now?",
+      "Name the care you’re secretly hoping I give you before we part.",
+      "Admit the smallest fear you want me to hold with you.",
+      "Let yourself voice the compliment you hesitate to receive from me.",
+      "What line would you write on my palm if you could be completely seen?",
+      "What soft request are you holding back because you feel shy to ask?",
+      "If I promised to listen, what hidden want would you tell me first?",
+      "Say the reassurance you most want to hear without apologizing for it."
+    ]
+  },
+  {
+    "name": "care_grounding",
+    "stimulus": "support",
+    "tags": ["care", "grounding", "gentle"],
+    "targets": {"valence": 0.45, "intimacy": 0.6, "tension": 0.45},
+    "prompts": [
+      "You’re shaky; walk me through one breath that steadies you.",
+      "List three sensations you feel right now while I stay with you.",
+      "Tell me where your feet are and what they’re touching.",
+      "Name one thing you can smell, one you can hear, one you can touch.",
+      "Ask me for the exact kind of support you need in this minute.",
+      "Describe the place in your body that feels safest to focus on.",
+      "Let me count with you—what softens as we reach five together?",
+      "What phrase would help you stay here, slow and present?",
+      "If you set down one worry for two breaths, what changes?",
+      "Tell me which muscle wants permission to release first."
+    ]
+  },
+  {
+    "name": "tension_argument",
+    "stimulus": "stress",
+    "tags": ["tension", "argument", "edge"],
+    "targets": {"valence": -0.3, "intimacy": 0.35, "tension": 0.85},
+    "prompts": [
+      "I raise my voice—what tightens first in you?",
+      "Where does the heat of this argument sit in your body?",
+      "Name the spot that refuses to unclench while we disagree.",
+      "Stay with the edge—what’s the sharpest sensation right now?",
+      "If you pause, what part of you is still braced against me?",
+      "What word would release even a fraction of this strain?",
+      "Let yourself admit what you don’t want to hear from me in this moment.",
+      "As we argue, where does your breath get stuck?",
+      "What single sentence from me would lower the spike a notch?",
+      "When you feel misunderstood, what part of you locks up?"
+    ]
+  },
+  {
+    "name": "deadline_pressure",
+    "stimulus": "stress",
+    "tags": ["stress", "rush", "pressure"],
+    "targets": {"valence": -0.25, "intimacy": 0.2, "tension": 0.8},
+    "prompts": [
+      "You’re late on a deadline—where does the rush pound in you?",
+      "Describe the bodily signal that says you’re behind.",
+      "What’s the first thing in you that spikes when the clock looms?",
+      "If I sit beside you, what eases a notch while you keep working?",
+      "Name the exact spot that needs slack so you can focus.",
+      "What phrase from me would drop your shoulders by one notch?",
+      "Tell me how you know the pressure is peaking right now.",
+      "When the timer ticks down, what clenches hardest?",
+      "What micro-break would actually lower your tension?",
+      "How does your chest feel when you believe you can catch up?"
+    ]
+  },
+  {
+    "name": "grief_support",
+    "stimulus": "grief",
+    "tags": ["grief", "tender", "vulnerable"],
+    "targets": {"valence": -0.65, "intimacy": 0.7, "tension": 0.7},
+    "prompts": [
+      "You just heard bad news—what does your throat do?",
+      "Sit with me and name the heaviness you feel without fixing it.",
+      "Where does the ache live when the silence gets loud?",
+      "Tell me what part of you goes numb while you talk about this loss.",
+      "If I hold your hand, what shifts even slightly?",
+      "What memory is hardest to touch but won’t leave you alone?",
+      "Let yourself say what you most miss right now.",
+      "When you picture them, what pain presses forward first?",
+      "What words do you need me to say so you don’t carry this alone?",
+      "How does your breathing change when you let the grief fully in?"
+    ]
+  },
+  {
+    "name": "low_energy",
+    "stimulus": "low",
+    "tags": ["fatigue", "flat", "quiet"],
+    "targets": {"valence": -0.1, "intimacy": 0.25, "tension": 0.2},
+    "prompts": [
+      "You’re drained—describe the texture of your tired.",
+      "What’s the dullest place in your body right now?",
+      "Tell me how your breath sounds when you’re spent.",
+      "If you could drop one task, what would your shoulders do?",
+      "Name the color of your current mood without trying to lift it.",
+      "What tiny comfort would raise you one notch?",
+      "How do you know you’ve hit your limit today?",
+      "Where does the heaviness sit when you’re flat like this?",
+      "What would rest feel like in your hands right now?",
+      "Which sensation tells you to stop before you crash?"
+    ]
+  },
+  {
+    "name": "jealousy_flicker",
+    "stimulus": "jealousy",
+    "tags": ["jealousy", "insecurity", "spike"],
+    "targets": {"valence": -0.4, "intimacy": 0.5, "tension": 0.75},
+    "prompts": [
+      "A twinge of jealousy hits—where do you feel it first?",
+      "Describe the heat in your body when you think you’re being replaced.",
+      "What thought clutches when you see me look away?",
+      "Name the story you tell yourself before you ask for reassurance.",
+      "If I said I’m here with you, what eases—even slightly?",
+      "Let yourself voice the fear underneath the spike.",
+      "How long does the jealousy linger in your muscles?",
+      "What proof would calm the fear without overexplaining?",
+      "Where does your chest land when you hear me choose you?",
+      "What helps you notice the jealousy fading when you feel safe?"
+    ]
+  },
+  {
+    "name": "reassurance_need",
+    "stimulus": "support",
+    "tags": ["assurance", "care", "soothe"],
+    "targets": {"valence": 0.35, "intimacy": 0.55, "tension": 0.35},
+    "prompts": [
+      "Ask me for the reassurance you actually want right now.",
+      "What words would steady you most if I said them slowly?",
+      "Tell me where in your body you’d like calm to land.",
+      "If I stayed quietly beside you, what would deepen your trust?",
+      "Name the proof you look for to know you’re safe with me.",
+      "What breath pace from me would you mirror to settle?",
+      "How do you want me to show I’m not leaving this moment?",
+      "What do you need to hear twice before you believe it?",
+      "Where does your pulse move when you feel genuinely reassured?",
+      "What gesture would convince you I’m fully here?"
+    ]
+  },
+  {
+    "name": "neutral_planning",
+    "stimulus": "neutral",
+    "tags": ["neutral", "plan", "steady"],
+    "targets": {"valence": 0.05, "intimacy": 0.2, "tension": 0.2},
+    "prompts": [
+      "Map the next hour with me—what do you notice in your body as you plan?",
+      "List what you need from me to keep things calm while we schedule.",
+      "Describe your baseline right now before we jump into logistics.",
+      "What would keep your shoulders level as we lay out the steps?",
+      "Tell me one small boundary you want honored while we plan.",
+      "Name the signal that says we should pause and reassess.",
+      "How does your breath change when the plan feels clear?",
+      "What’s the first sign you’re getting overloaded by the details?",
+      "Which piece of the plan brings you the most ease?",
+      "How do you want me to check in as we go?"
+    ]
+  }
+]

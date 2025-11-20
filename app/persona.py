@@ -16,6 +16,39 @@ from app.telemetry import log_json_line
 from app.runtime import RuntimeState
 from state_engine import StateEngine
 
+SELF_NARRATION_DESCRIPTORS = {
+    "dopamine": "the spark in my chest",
+    "serotonin": "the calm behind my ribs",
+    "cortisol": "the tight coil along my spine",
+    "oxytocin": "the warmth across my sternum",
+    "noradrenaline": "the alert edge at the back of my mind",
+}
+
+def _describe_sensation_shift(hormone: str, delta: float) -> str | None:
+    if abs(delta) < 0.05:
+        return None
+    descriptor = SELF_NARRATION_DESCRIPTORS.get(hormone, f"{HORMONE_FEELING_NAMES.get(hormone, hormone)} inside me")
+    amount = abs(delta)
+    if delta > 0:
+        if amount >= 5.0:
+            action = "surges hot and insistent"
+        elif amount >= 2.0:
+            action = "pushes forward with intent"
+        elif amount >= 0.6:
+            action = "drifts upward in steady waves"
+        else:
+            action = "lifts quietly under the surface"
+    else:
+        if amount >= 5.0:
+            action = "drains sharply and leaves me still"
+        elif amount >= 2.0:
+            action = "settles back and softens"
+        elif amount >= 0.6:
+            action = "loosens its grip a little"
+        else:
+            action = "dims gently"
+    return f"{descriptor} {action}."
+
 
 DEFAULT_LENGTH_HINT = "I stay adaptive to the cadence we need."
 
@@ -166,15 +199,14 @@ def update_self_narration(
     top_changes = deltas[:3]
     fragments: list[str] = []
     for hormone, delta in top_changes:
-        descriptor = HORMONE_FEELING_NAMES.get(hormone, hormone)
-        direction = "lifting" if delta > 0 else "settling"
-        fragments.append(f"{descriptor} is {direction} ({delta:+.2f})")
+        phrase = _describe_sensation_shift(hormone, delta)
+        if phrase:
+            fragments.append(phrase)
     affect_clause = ""
     if user_affect and user_affect.tags:
         affect_clause = f"Your tone lands as {', '.join(user_affect.tags)}."
-    runtime_state.self_narration_note = " ".join(
-        part for part in ["; ".join(fragments), affect_clause] if part
-    )
+    note_parts = [part for part in [" ".join(fragments).strip(), affect_clause] if part]
+    runtime_state.self_narration_note = " ".join(note_parts)
 
 
 def compose_heuristic_reply(

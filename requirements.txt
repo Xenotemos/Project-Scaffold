@@ -1,6 +1,6 @@
-fastapi
-uvicorn
-sqlmodel
-pydantic
-httpx
-jinja2
+fastapi==0.119.1
+uvicorn==0.38.0
+sqlmodel==0.0.27
+pydantic==2.12.3
+httpx==0.28.1
+jinja2==3.1.6

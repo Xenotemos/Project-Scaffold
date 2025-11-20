@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from app.persona import build_persona_snapshot, compose_heuristic_reply
@@ -17,10 +18,12 @@ def _shorten(text: str, limit: int) -> str:
 class PersonaHelperTests:
     def setup_method(self) -> None:
         self.engine = StateEngine()
-        self.engine.register_event(
-            "I logged a short diagnostic experience about warmth",
-            strength=0.6,
-            stimulus_type="reward",
+        asyncio.run(
+            self.engine.register_event(
+                "I logged a short diagnostic experience about warmth",
+                strength=0.6,
+                stimulus_type="reward",
+            )
         )
 
     def _base_context(self) -> dict[str, Any]:
@@ -64,4 +67,3 @@ class PersonaHelperTests:
             shorten=_shorten,
         )
         assert "i still remember" in reply.lower()
-

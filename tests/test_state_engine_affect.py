@@ -1,3 +1,4 @@
+import asyncio
 import unittest
 
 from state_engine import StateEngine
@@ -20,10 +21,12 @@ class StateEngineAffectIntegrationTests(unittest.TestCase):
         baseline = engine.trait_snapshot()
         self.assertIsNotNone(baseline)
         baseline_snapshot = baseline
-        engine.register_event(
-            "tension spike",
-            strength=0.2,
-            hormone_deltas={"cortisol": 25.0, "noradrenaline": 18.0},
+        asyncio.run(
+            engine.register_event(
+                "tension spike",
+                strength=0.2,
+                hormone_deltas={"cortisol": 25.0, "noradrenaline": 18.0},
+            )
         )
         updated = engine.trait_snapshot()
         self.assertIsNotNone(updated)

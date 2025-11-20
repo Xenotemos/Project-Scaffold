@@ -1,0 +1,23 @@
+{
+  "type": "llama_cpp",
+  "llama_server_bin": "third_party/llama.cpp/build/bin/Release/llama-server.exe",
+  "model_path": "D:/AI/LLMs/qwen3_affect_merged/affect_lora_merged-Q6_K.gguf",
+  "host": "127.0.0.1",
+  "port": 8082,
+  "alias": "affect-head",
+  "extra_args": [
+    "--ctx-size",
+    "8192",
+    "--n-gpu-layers",
+    "999",
+    "--log-disable"
+  ],
+  "max_new_tokens": 64,
+  "temperature": 0.0,
+  "top_p": 0.7,
+  "timeout": 10.0,
+  "readiness_timeout": 5.0,
+  "model_confidence": 0.85,
+  "start_server": true,
+  "fallback_rules": {}
+}

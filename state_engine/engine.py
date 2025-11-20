@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import random
 from datetime import datetime, timezone
 from typing import Any
@@ -26,6 +27,7 @@ class StateEngine:
         self.memory_manager = memory_manager or MemoryManager()
         self._noise_amplitude = 0.35
         self._trait_smoothing = 0.65
+        self._lock = asyncio.Lock()
         self._initialize_state()
 
     def _initialize_state(self) -> None:
@@ -47,21 +49,22 @@ class StateEngine:
 
     async def tick(self) -> None:
         """Advance hormone and memory subsystems on a fixed cadence."""
-        self.hormone_system.advance(self.tick_interval)
-        self.memory_manager.tick()
-        self._tick_counter += 1
-        self._inject_environmental_noise()
-        if self._tick_counter % 15 == 0:
-            self.memory_manager.record_event(
-                content="internal check-in: I pause to notice breath, pulse, and tension without forcing a response",
-                strength=0.4,
-                mood=self._current_mood(),
-                hormone_snapshot=self.hormone_system.get_state(),
-                endocrine_trace=self._endocrine_trace(),
-            )
-        self.state = self._compose_state()
+        async with self._lock:
+            self.hormone_system.advance(self.tick_interval)
+            self.memory_manager.tick()
+            self._tick_counter += 1
+            self._inject_environmental_noise()
+            if self._tick_counter % 15 == 0:
+                self.memory_manager.record_event(
+                    content="internal check-in: I pause to notice breath, pulse, and tension without forcing a response",
+                    strength=0.4,
+                    mood=self._current_mood(),
+                    hormone_snapshot=self.hormone_system.get_state(),
+                    endocrine_trace=self._endocrine_trace(),
+                )
+            self.state = self._compose_state()
 
-    def register_event(
+    async def register_event(
         self,
         content: str,
         *,
@@ -69,22 +72,18 @@ class StateEngine:
         stimulus_type: str | None = None,
         hormone_deltas: dict[str, float] | None = None,
         mood: str | None = None,
+        apply_sentiment: bool = True,
     ) -> None:
         """Register an external event, updating hormone and memory stores."""
-        if stimulus_type is not None:
-            self.hormone_system.apply_stimulus(stimulus_type)
-        if hormone_deltas:
-            self.hormone_system.apply_deltas(hormone_deltas)
-        current_mood = mood or self._current_mood()
-        self._apply_sentiment_feedback(content)
-        self.memory_manager.record_event(
-            content=content,
-            strength=strength,
-            mood=current_mood,
-            hormone_snapshot=self.hormone_system.get_state(),
-            endocrine_trace=self._endocrine_trace(),
-        )
-        self.state = self._compose_state()
+        async with self._lock:
+            self._register_event_unlocked(
+                content,
+                strength=strength,
+                stimulus_type=stimulus_type,
+                hormone_deltas=hormone_deltas,
+                mood=mood,
+                apply_sentiment=apply_sentiment,
+            )
 
     def snapshot(self) -> dict[str, Any]:
         """Return the latest computed state snapshot."""
@@ -137,6 +136,32 @@ class StateEngine:
         self.hormone_system = type(self.hormone_system)()
         self.memory_manager = type(self.memory_manager)()
         self._initialize_state()
+
+    def _register_event_unlocked(
+        self,
+        content: str,
+        *,
+        strength: float,
+        stimulus_type: str | None,
+        hormone_deltas: dict[str, float] | None,
+        mood: str | None,
+        apply_sentiment: bool,
+    ) -> None:
+        if stimulus_type is not None:
+            self.hormone_system.apply_stimulus(stimulus_type)
+        if hormone_deltas:
+            self.hormone_system.apply_deltas(hormone_deltas)
+        current_mood = mood or self._current_mood()
+        if apply_sentiment:
+            self._apply_sentiment_feedback(content)
+        self.memory_manager.record_event(
+            content=content,
+            strength=strength,
+            mood=current_mood,
+            hormone_snapshot=self.hormone_system.get_state(),
+            endocrine_trace=self._endocrine_trace(),
+        )
+        self.state = self._compose_state()
 
     def _compose_state(self) -> dict[str, Any]:
         """Build the broadcastable state payload."""

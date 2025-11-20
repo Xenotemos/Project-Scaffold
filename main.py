@@ -27,6 +27,7 @@ from brain.affect_classifier import (
     AffectClassifier,
     load_affect_classifier,
 )
+from brain.affect_sidecar import AffectSidecarManager
 from brain.controller_policy import ControllerPolicy, ControllerPolicyRuntime, load_controller_policy
 from brain.llm_client import LivingLLMClient
 from brain.local_llama_engine import LocalLlamaEngine
@@ -88,6 +89,8 @@ from app.telemetry import (
     log_voice_guard_event,
     log_webui_interaction,
 )
+from app.affect_telemetry import log_affect_head_event
+from app.affect_tail import append_affect_compact, append_affect_raw
 from app.sampling import (
     apply_affect_style_overrides,
     apply_helper_tone_bias,
@@ -155,6 +158,8 @@ ENDOCRINE_LOG = BASE_DIR / "logs" / "endocrine_turns.jsonl"
 HORMONE_TRACE_LOG = BASE_DIR / "logs" / "hormone_trace.jsonl"
 HORMONE_TRACE_ENABLED = True
 AFFECT_CLASSIFIER_LOG = BASE_DIR / "logs" / "affect_classifier.jsonl"
+AFFECT_HEAD_TELEMETRY_LOG = BASE_DIR / "logs" / "affect_head_telemetry.jsonl"
+AFFECT_ALIGNMENT_LOG = BASE_DIR / "logs" / "affect_head_alignment.jsonl"
 WEBUI_INTERACTION_LOG = WEBUI_LOG_DIR / "interactions.log"
 WEBUI_INTERACTION_PRETTY_LOG = WEBUI_LOG_DIR / "interactions_readable.log"
 TELEMETRY_SNAPSHOT_PATH = TELEMETRY_LOG_DIR / "last_frame.json"
@@ -170,6 +175,8 @@ CONTROLLER_LOCK = threading.Lock()
 AFFECT_CLASSIFIER_PATH = runtime_settings.affect_classifier_path
 AFFECT_CLASSIFIER: AffectClassifier | None = None
 AFFECT_CLASSIFIER_BLEND_MIN_CONFIDENCE = 0.05
+AFFECT_SIDECAR: AffectSidecarManager | None = None
+affect_head_console: subprocess.Popen | None = None
 VOICE_GUARD = VoiceGuard()
 HORMONE_STYLE_MAP_PATH = runtime_settings.hormone_style_map_path
 HORMONE_STYLE_MAP: dict[str, list[dict[str, Any]]] = copy.deepcopy(DEFAULT_HORMONE_STYLE_MAP)
@@ -265,12 +272,16 @@ def _reinitialize_controller_policy() -> None:
 
 def _reinitialize_affect_classifier() -> None:
     """Load the affect classifier configuration."""
-    global AFFECT_CLASSIFIER
+    global AFFECT_CLASSIFIER, AFFECT_SIDECAR
     try:
         AFFECT_CLASSIFIER = load_affect_classifier(AFFECT_CLASSIFIER_PATH or None)
+        # If the classifier uses a sidecar manager, store it for startup hooks
+        if hasattr(AFFECT_CLASSIFIER, "_sidecar"):
+            AFFECT_SIDECAR = getattr(AFFECT_CLASSIFIER, "_sidecar", None)
     except Exception as exc:  # pragma: no cover - defensive
         logger.warning("Failed to load affect classifier config: %s", exc)
         AFFECT_CLASSIFIER = AffectClassifier()
+        AFFECT_SIDECAR = None
 
 
 def _reinitialize_hormone_style_map() -> None:
@@ -332,18 +343,40 @@ def _apply_reinforcement_signals(
     input_intimacy = signals.get("input_affect_intimacy")
     input_tension = signals.get("input_affect_tension")
     classifier_conf = float(signals.get("affect_classifier_confidence", 0.0) or 0.0)
-    if isinstance(input_valence, (int, float)):
-        blend = 0.5 if classifier_conf >= 0.15 else 0.35
-        valence = max(-1.0, min(1.0, ((1.0 - blend) * valence) + (blend * float(input_valence))))
-    affect_valence = float(valence)
-    intimacy_signal = max(
-        affect_intimacy,
-        float(input_intimacy) if isinstance(input_intimacy, (int, float)) else 0.0,
+    affect_tags = {
+        str(tag).lower()
+        for tag in (signals.get("affect_classifier_tags") or [])
+        if isinstance(tag, str)
+    }
+    has_input_affect = any(
+        isinstance(value, (int, float)) for value in (input_valence, input_intimacy, input_tension)
     )
-    tension_signal = max(
-        affect_tension,
-        float(input_tension) if isinstance(input_tension, (int, float)) else 0.0,
-    )
+
+    def _classifier_weight(conf: float) -> float:
+        if conf >= 0.65:
+            return 0.9
+        if conf >= 0.45:
+            return 0.75
+        if conf >= 0.25:
+            return 0.6
+        return 0.45
+
+    weight = _classifier_weight(classifier_conf)
+
+    def _blend_component(base_value: float, classified_value: float | None) -> float:
+        if isinstance(classified_value, (int, float)):
+            blended = ((1.0 - weight) * float(base_value)) + (weight * float(classified_value))
+            return blended
+        return float(base_value)
+
+    adjusted_valence = _blend_component(float(valence), float(input_valence) if isinstance(input_valence, (int, float)) else None)
+    valence_signal = adjusted_valence if has_input_affect else float(valence)
+    affect_valence = float(max(-1.0, min(1.0, adjusted_valence)))
+
+    raw_intimacy = _blend_component(float(affect_intimacy), float(input_intimacy) if isinstance(input_intimacy, (int, float)) else None)
+    raw_tension = _blend_component(float(affect_tension), float(input_tension) if isinstance(input_tension, (int, float)) else None)
+    intimacy_signal = max(-1.5, min(1.5, raw_intimacy if has_input_affect else float(affect_intimacy)))
+    tension_signal = max(-1.5, min(1.5, raw_tension if has_input_affect else float(affect_tension)))
 
     adjustments: dict[str, float] = {}
     requested_adjustments: dict[str, float] = {}
@@ -352,22 +385,34 @@ def _apply_reinforcement_signals(
     pre_hormones = state_engine.hormone_system.get_state()
     post_hormones = dict(pre_hormones)
 
-    if valence > 0.05:
-        lift = min(1.0, valence)
+    if valence_signal > 0.05:
+        lift = min(1.0, valence_signal)
         adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 1.0 * lift
         adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 0.9 * lift
-        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 0.8 * lift
+        dopamine_gain = 0.8
+        if profile == "instruct":
+            dopamine_gain = 1.05
+        elif profile == "base":
+            dopamine_gain = 1.1
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + dopamine_gain * lift
         adjustments["cortisol"] = adjustments.get("cortisol", 0.0) - 0.6 * lift
-    elif valence < -0.05:
-        drop = min(1.0, abs(valence))
+    elif valence_signal < -0.05:
+        drop = min(1.0, abs(valence_signal))
         adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 1.1 * drop
         adjustments["dopamine"] = adjustments.get("dopamine", 0.0) - 0.7 * drop
-    if affect_valence > 0.15:
+    if has_input_affect and affect_valence > 0.15:
         positivity = affect_valence - 0.15
-        dopamine_gain = 1.4 if profile == "instruct" else 1.0
+        if profile == "instruct":
+            dopamine_gain = 1.4
+        elif profile == "base":
+            dopamine_gain = 1.3
+        else:
+            dopamine_gain = 1.0
+        if "tension" in affect_tags and tension_signal >= 0.25:
+            dopamine_gain *= 0.4
         adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + dopamine_gain * positivity
         adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 0.9 * positivity
-    elif affect_valence < -0.15:
+    elif has_input_affect and affect_valence < -0.15:
         negativity = abs(affect_valence) - 0.15
         adjustments["dopamine"] = adjustments.get("dopamine", 0.0) - 0.9 * negativity
         adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) - 0.6 * negativity
@@ -387,7 +432,14 @@ def _apply_reinforcement_signals(
         adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) - 1.0
     if intimacy_signal > 0.02:
         closeness = min(3.0, intimacy_signal * 4.5)
-        dopamine_bonus = 1.4 if profile == "instruct" else 1.0
+        if "tension" in affect_tags and tension_signal >= 0.25:
+            closeness *= 0.35
+        if profile == "instruct":
+            dopamine_bonus = 1.55
+        elif profile == "base":
+            dopamine_bonus = 1.45
+        else:
+            dopamine_bonus = 1.0
         adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 2.2 * closeness
         adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + dopamine_bonus * closeness
         adjustments["cortisol"] = adjustments.get("cortisol", 0.0) - 0.55 * closeness
@@ -396,6 +448,8 @@ def _apply_reinforcement_signals(
         adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 1.4 * spike
         adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + 1.2 * spike
         adjustments["serotonin"] = adjustments.get("serotonin", 0.0) - 0.55 * spike
+        adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) - 0.4 * spike
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) - 0.8 * spike
     elif tension_signal < -0.04:
         ease = min(1.5, abs(tension_signal) * 2.3)
         adjustments["cortisol"] = adjustments.get("cortisol", 0.0) - 1.05 * ease
@@ -476,6 +530,25 @@ def _apply_reinforcement_signals(
             clamp_delta = round(applied_delta - requested_delta, 4)
             if abs(clamp_delta) >= 0.0001:
                 clamped_adjustments[name] = clamp_delta
+
+    affect_snapshot = runtime_state.last_affect_head_snapshot
+    if affect_snapshot:
+        alignment_payload = {
+            "event": "affect_alignment",
+            "ts": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            "scores": affect_snapshot.get("scores"),
+            "tags": affect_snapshot.get("tags"),
+            "latency_ms": affect_snapshot.get("latency_ms"),
+            "signals": {
+                "valence": round(valence_signal, 4),
+                "intimacy": round(intimacy_signal, 4),
+                "tension": round(tension_signal, 4),
+            },
+            "requested": requested_adjustments,
+            "applied": applied_adjustments,
+            "clamped": clamped_adjustments,
+        }
+        log_affect_head_event(AFFECT_ALIGNMENT_LOG, alignment_payload)
 
     return {
         "signals": {
@@ -662,13 +735,18 @@ def _init_local_llama() -> LocalLlamaEngine | None:
 
 async def _shutdown_clients() -> None:
     """Close active LLM clients and stop the local engine."""
-    global llm_client, local_llama_engine
+    global llm_client, local_llama_engine, AFFECT_SIDECAR
     if llm_client is not None:
         await llm_client.aclose()
         llm_client = None
     if local_llama_engine is not None:
         await local_llama_engine.stop()
         local_llama_engine = None
+    if AFFECT_SIDECAR is not None:
+        try:
+            await AFFECT_SIDECAR.stop()
+        except Exception:
+            pass
 
 
 async def _configure_clients() -> None:
@@ -725,6 +803,38 @@ async def _reload_runtime_settings() -> dict[str, Any]:
 static_dir = BASE_DIR / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+# -------------------- Affect head console helper -------------------- #
+
+def _ensure_affect_head_console() -> None:
+    """Open a compact console window tailing the affect head telemetry."""
+    global affect_head_console
+    if os.name != "nt":
+        return
+    if affect_head_console and affect_head_console.poll() is None:
+        return
+    if os.getenv("AFFECT_HEAD_CONSOLE", "1").strip().lower() in {"0", "false", "off", "disable", "disabled"}:
+        return
+    log_path = BASE_DIR / "logs" / "affect_head_raw.jsonl"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    if not log_path.exists():
+        try:
+            log_path.touch()
+        except Exception:
+            pass
+    python_exe = str(Path(sys.executable or "python"))
+    monitor_path = BASE_DIR / "scripts" / "affect_head_monitor.py"
+    cmd: list[str] = [python_exe, str(monitor_path), "--log", str(log_path)]
+    proc_kwargs: dict[str, Any] = {"cwd": str(BASE_DIR)}
+    if os.name == "nt":
+        # Match other telemetry consoles (conhost-based) instead of forcing PowerShell.
+        proc_kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
+    else:
+        proc_kwargs["start_new_session"] = True
+    try:
+        affect_head_console = subprocess.Popen(cmd, **proc_kwargs)
+    except Exception as exc:  # pragma: no cover - best effort
+        logger.debug("Failed to open affect head console: %s", exc)
 
 
 class EventPayload(BaseModel):
@@ -836,13 +946,32 @@ async def start_background_tasks() -> None:
     if update_task is None or update_task.done():
         update_task = asyncio.create_task(run_state_updates())
     await _configure_clients()
+    # Warm the affect sidecar if configured
+    if AFFECT_SIDECAR is not None:
+        try:
+            await AFFECT_SIDECAR.ensure_running()
+            logger.info("Affect sidecar ready at %s", AFFECT_SIDECAR.base_url)
+            ready_payload = {
+                "event": "affect_head_ready",
+                "ts": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+                "base_url": AFFECT_SIDECAR.base_url,
+                "model_path": str(getattr(AFFECT_SIDECAR, "config", {}).get("model_path", "")),
+                "source": "affect_head",
+            }
+            log_affect_head_event(AFFECT_HEAD_TELEMETRY_LOG, ready_payload)
+            append_affect_raw(BASE_DIR / "logs", ready_payload)
+            append_affect_compact(BASE_DIR / "logs", ready_payload)
+            runtime_state.last_affect_head_snapshot = ready_payload
+        except Exception as exc:
+            logger.warning("Affect sidecar failed to start: %s", exc)
+    _ensure_affect_head_console()
     await _ensure_telemetry_monitor()
 
 
 @app.on_event("shutdown")
 async def stop_background_tasks() -> None:
     """Cancel the background update loop when the app stops."""
-    global update_task
+    global update_task, affect_head_console
     if update_task is not None:
         update_task.cancel()
         try:
@@ -852,6 +981,17 @@ async def stop_background_tasks() -> None:
         update_task = None
     await _shutdown_clients()
     await _stop_telemetry_monitor()
+    if affect_head_console and affect_head_console.poll() is None:
+        affect_head_console.terminate()
+    if affect_head_console:
+        try:
+            affect_head_console.wait(timeout=1.0)
+        except Exception:
+            try:
+                affect_head_console.kill()
+            except Exception:
+                pass
+        affect_head_console = None
 
 
 @app.get("/admin/model")
@@ -896,6 +1036,7 @@ async def telemetry_snapshot() -> dict[str, Any]:
         runtime_state=runtime_state,
         model_alias=LLAMA_MODEL_ALIAS,
         local_llama_available=local_llama_engine is not None,
+        affect_head_snapshot=runtime_state.last_affect_head_snapshot,
     )
 
 
@@ -912,6 +1053,7 @@ async def telemetry_stream() -> StreamingResponse:
                     runtime_state=runtime_state,
                     model_alias=LLAMA_MODEL_ALIAS,
                     local_llama_available=local_llama_engine is not None,
+                    affect_head_snapshot=runtime_state.last_affect_head_snapshot,
                 )
                 yield _sse_event("telemetry", payload)
                 await asyncio.sleep(interval)
@@ -976,6 +1118,28 @@ def _classify_user_affect(message: str) -> AffectClassification | None:
         return None
     try:
         result = classifier.classify(text)
+        # Log structured affect-head telemetry if available
+        if result and result.metadata and result.metadata.get("source") == "llama_cpp":
+            payload = {
+                "event": "affect_classification",
+                "text_preview": _shorten(text, 120),
+                "source": "affect_head",
+                "scores": {
+                    "valence": result.valence,
+                    "intimacy": result.intimacy,
+                    "tension": result.tension,
+                    "confidence": result.confidence,
+                },
+                "tags": list(result.tags),
+                "latency_ms": result.metadata.get("latency_ms"),
+                "raw_completion": result.metadata.get("raw_completion"),
+                "reasoning": result.metadata.get("reasoning"),
+                "ts": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            }
+            log_affect_head_event(AFFECT_HEAD_TELEMETRY_LOG, payload)
+            append_affect_raw(BASE_DIR / "logs", payload)
+            append_affect_compact(BASE_DIR / "logs", payload)
+            runtime_state.last_affect_head_snapshot = payload
     except Exception as exc:  # pragma: no cover - defensive
         logger.debug("Affect classifier failed: %s", exc)
         return None
@@ -1184,6 +1348,8 @@ def _prepare_chat_request(
         "length_label": length_plan.get("label"),
         "profile": profile,
     }
+    if runtime_state.last_affect_head_snapshot:
+        snapshot["affect_head"] = dict(runtime_state.last_affect_head_snapshot)
     if controller_snapshot:
         snapshot["controller"] = controller_snapshot
         snapshot["controller_input"] = {
@@ -1293,15 +1459,17 @@ async def _reset_live_session(reason: str) -> None:
                     "priming: quote their exact words, start with \"You...\" or \"We...\", "
                     "and keep the first two sentences anchored to them before any I-statements."
                 )
-            state_engine.register_event(
+            await state_engine.register_event(
                 content=priming_text,
                 strength=0.85,
                 stimulus_type="affection",
+                apply_sentiment=False,
             )
-            state_engine.register_event(
+            await state_engine.register_event(
                 content="priming: first sentence must start with you/we and echo their phrasing before reflecting inward.",
                 strength=0.75,
                 stimulus_type="reward",
+                apply_sentiment=False,
             )
             runtime_state.clamp_priming_turns = max(runtime_state.clamp_priming_turns, 3)
             runtime_state.reset_priming_bias = RESET_PRIMING_BIAS_DEFAULT
@@ -1418,7 +1586,7 @@ async def _generate_chat_reply(
     return reply_text, source, payload, intent_prediction, length_plan, telemetry
 
 
-def _finalize_chat_response(
+async def _finalize_chat_response(
     user_message: str,
     reply_text: str,
     source: str,
@@ -1435,10 +1603,11 @@ def _finalize_chat_response(
     reply_echo = _shorten(reply_text, 200)
     short_user = _shorten(user_message, 200)
     ai_content = f"I replied in my own voice {reply_echo}"
-    state_engine.register_event(
+    await state_engine.register_event(
         ai_content,
         strength=0.4,
         mood=state_engine.state["mood"],
+        apply_sentiment=False,
     )
     reinforcement = score_response(
         user_message,
@@ -1754,7 +1923,7 @@ async def get_recent_memories(limit: int = 5) -> dict[str, Any]:
 async def post_event(payload: EventPayload) -> dict[str, Any]:
     """Record an external interaction and update hormone levels accordingly."""
     try:
-        state_engine.register_event(
+        await state_engine.register_event(
             payload.content,
             strength=payload.strength,
             stimulus_type=payload.stimulus,
@@ -1801,7 +1970,7 @@ async def chat_stream(payload: ChatMessage) -> StreamingResponse:
     """Stream chat responses token-by-token when supported."""
     user_affect = _classify_user_affect(payload.message)
     try:
-        state_engine.register_event(
+        await state_engine.register_event(
             f"user: {payload.message}",
             strength=0.7,
             stimulus_type=payload.stimulus,
@@ -1884,7 +2053,7 @@ async def chat_stream(payload: ChatMessage) -> StreamingResponse:
             if reply_text:
                 yield _sse_event("token", {"text": reply_text})
             telemetry_data = telemetry
-        final_response = _finalize_chat_response(
+        final_response = await _finalize_chat_response(
             payload.message,
             reply_text,
             source,
@@ -1905,7 +2074,7 @@ async def chat(payload: ChatMessage) -> dict[str, Any]:
     user_affect = _classify_user_affect(payload.message)
     try:
         shared_echo = _shorten(payload.message, 160)
-        state_engine.register_event(
+        await state_engine.register_event(
             f"Heard you share {shared_echo}",
             strength=0.7,
             stimulus_type=payload.stimulus,
@@ -1921,7 +2090,7 @@ async def chat(payload: ChatMessage) -> dict[str, Any]:
         length_plan,
         telemetry,
     ) = await _generate_chat_reply(payload.message, user_affect=user_affect)
-    return _finalize_chat_response(
+    return await _finalize_chat_response(
         payload.message,
         reply_text,
         source,

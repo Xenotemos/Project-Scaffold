@@ -65,6 +65,12 @@ def main() -> None:
         default="logs/probe_runs/affect_validation_ci.json",
         help="Destination for affect validation JSON summary (default: logs/probe_runs/affect_validation_ci.json).",
     )
+    parser.add_argument(
+        "--affect-threshold",
+        type=float,
+        default=0.0,
+        help="Minimum fraction of expectations that must pass (default: 0.0, i.e., require all expectations).",
+    )
     args = parser.parse_args()
 
     log_path = ROOT / args.log_file
@@ -132,6 +138,7 @@ def main() -> None:
             args.affect_json,
         ]
         _run_step("AFFECT_VALIDATION", affect_cmd)
+        _enforce_affect_threshold(args.affect_json, threshold=args.affect_threshold)
 
     if args.mid_span_dir:
         run_dir = args.mid_span_dir
@@ -155,3 +162,36 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def _enforce_affect_threshold(json_path: str | Path, threshold: float = 0.0) -> None:
+    path = Path(json_path)
+    if not path.exists():
+        print(f"[ci] affect validation summary missing at {path}", file=sys.stderr)
+        raise SystemExit(4)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    results = data.get("results") or []
+    summaries = data.get("summaries") or []
+    unmet = [
+        result
+        for result in results
+        if any(not spec.get("met") for spec in (result.get("expectation") or {}).values())
+    ]
+    total_expectations = sum(summary.get("expectation_total", 0) for summary in summaries)
+    total_hits = sum(summary.get("expectation_hits", 0) for summary in summaries)
+    fraction = 1.0 if total_expectations == 0 else total_hits / total_expectations
+    if unmet or fraction < threshold:
+        print(
+            f"[ci] affect validation failed: hits={total_hits}/{total_expectations} fraction={fraction:.3f} threshold={threshold:.3f}",
+            file=sys.stderr,
+        )
+        for record in unmet[:5]:
+            scenario = record.get("scenario", {}).get("name")
+            profile = record.get("profile")
+            expectations = record.get("expectation") or {}
+            failed = [k for k, spec in expectations.items() if not spec.get("met")]
+            print(
+                f"[ci]  - profile={profile} scenario={scenario} failed={','.join(failed)}",
+                file=sys.stderr,
+            )
+        raise SystemExit(5)

@@ -33,6 +33,8 @@ def _memory_candidates_from_records(
         candidate_key = _memory_key(record, index)
         created_at = getattr(record, "created_at", None)
         if isinstance(created_at, datetime):
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
             age_seconds = max(0.0, (now - created_at).total_seconds())
         else:
             age_seconds = index * (base_window / record_count)

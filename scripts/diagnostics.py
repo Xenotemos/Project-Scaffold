@@ -269,7 +269,9 @@ def check_memory_coupling() -> StatusTuple:
         from state_engine.engine import StateEngine
 
         engine = StateEngine()
-        engine.register_event("diagnostic touchpoint", strength=0.6, hormone_deltas={"dopamine": 2.0})
+        asyncio.run(
+            engine.register_event("diagnostic touchpoint", strength=0.6, hormone_deltas={"dopamine": 2.0})
+        )
         manager = engine.memory_manager
         short_term = list(manager._short_term)  # type: ignore[attr-defined]
         attributes = short_term[0].attributes if short_term else {}
@@ -316,7 +318,7 @@ def check_persona_helpers() -> StatusTuple:
         from state_engine import StateEngine
 
         engine = StateEngine()
-        engine.register_event("diagnostic reflection", strength=0.6, stimulus_type="reward")
+        asyncio.run(engine.register_event("diagnostic reflection", strength=0.6, stimulus_type="reward"))
         snapshot = build_persona_snapshot(engine)
         memory_manager = engine.memory_manager
         memory_context = {
@@ -713,7 +715,9 @@ def check_endocrine_handshake() -> StatusTuple:
         )
         traits = main.state_engine.trait_snapshot()
         if traits is None:
-            main.state_engine.register_event("diagnostic endocrine handshake", hormone_deltas={"serotonin": 1.2})
+            asyncio.run(
+                main.state_engine.register_event("diagnostic endocrine handshake", hormone_deltas={"serotonin": 1.2})
+            )
             traits = main.state_engine.trait_snapshot()
         pre_hormones = dict(main.state_engine.hormone_system.get_state())
 
@@ -829,6 +833,31 @@ def check_http_endpoints() -> StatusTuple:
         return _status_err(f"{exc.__class__.__name__}: {exc}")
 
 
+def check_affect_sidecar() -> StatusTuple:
+    try:
+        import importlib
+
+        main = importlib.import_module("main")
+        sidecar = getattr(main, "AFFECT_SIDECAR", None)
+        if sidecar is None:
+            return _status_chk("affect sidecar not configured")
+        asyncio.run(sidecar.ensure_running())  # type: ignore[attr-defined]
+        return _status_ok("affect sidecar ready", {"base_url": sidecar.base_url})
+    except Exception as exc:
+        return _status_err(f"{exc.__class__.__name__}: {exc}")
+
+
+def check_affect_telemetry_log() -> StatusTuple:
+    log_path = ROOT / "logs" / "affect_head_telemetry.jsonl"
+    try:
+        if not log_path.exists():
+            return _status_chk("affect telemetry log missing", {"path": str(log_path)})
+        size = log_path.stat().st_size
+        return _status_ok("affect telemetry present", {"path": str(log_path), "bytes": size})
+    except Exception as exc:
+        return _status_err(f"{exc.__class__.__name__}: {exc}", {"path": str(log_path)})
+
+
 def check_test_scaffolding() -> StatusTuple:
     try:
         module = importlib.import_module("tests.test_chat")
@@ -854,6 +883,8 @@ DIAGNOSTICS: Iterable[Diagnostic] = (
     Diagnostic("Endocrine handshake", "brain/hormone_model.py", check_endocrine_handshake),
     Diagnostic("Controller handshake", "main.py", check_controller_handshake),
     Diagnostic("Router/sampling alignment", "main.py", check_router_sampling_alignment),
+    Diagnostic("Affect sidecar", "affect (llama.cpp)", check_affect_sidecar),
+    Diagnostic("Affect telemetry log", "logs/affect_head_telemetry.jsonl", check_affect_telemetry_log),
     Diagnostic("HTTP endpoints", "FastAPI", check_http_endpoints),
     Diagnostic("Test scaffolding", "tests/test_chat.py", check_test_scaffolding),
     Diagnostic("Probe log health", "logs/probe_runs", check_probe_log_health),
