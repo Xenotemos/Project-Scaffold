@@ -354,8 +354,9 @@ def _apply_reinforcement_signals(
 
     if valence > 0.05:
         lift = min(1.0, valence)
-        adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 0.9 * lift
-        adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 0.7 * lift
+        adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 1.0 * lift
+        adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 0.9 * lift
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 0.8 * lift
         adjustments["cortisol"] = adjustments.get("cortisol", 0.0) - 0.6 * lift
     elif valence < -0.05:
         drop = min(1.0, abs(valence))
@@ -363,7 +364,8 @@ def _apply_reinforcement_signals(
         adjustments["dopamine"] = adjustments.get("dopamine", 0.0) - 0.7 * drop
     if affect_valence > 0.15:
         positivity = affect_valence - 0.15
-        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 1.1 * positivity
+        dopamine_gain = 1.4 if profile == "instruct" else 1.0
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + dopamine_gain * positivity
         adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 0.9 * positivity
     elif affect_valence < -0.15:
         negativity = abs(affect_valence) - 0.15
@@ -384,12 +386,11 @@ def _apply_reinforcement_signals(
     elif engagement > 0.75:
         adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) - 1.0
     if intimacy_signal > 0.02:
-        closeness = min(2.2, intimacy_signal * 4.0)
-        adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 1.8 * closeness
-        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 0.95 * closeness
-        adjustments["cortisol"] = adjustments.get("cortisol", 0.0) - 0.65 * closeness
-        if profile == "base":
-            adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 0.6 * closeness
+        closeness = min(3.0, intimacy_signal * 4.5)
+        dopamine_bonus = 1.4 if profile == "instruct" else 1.0
+        adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 2.2 * closeness
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + dopamine_bonus * closeness
+        adjustments["cortisol"] = adjustments.get("cortisol", 0.0) - 0.55 * closeness
     if tension_signal > 0.02:
         spike = min(2.0, tension_signal * 3.2)
         adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 1.4 * spike
@@ -1490,12 +1491,18 @@ def _finalize_chat_response(
         runtime_state.helper_drift_level = max(0.0, runtime_state.helper_drift_level - HELPER_PENALTY_DECAY)
     if telemetry is not None:
         telemetry["voice_guard"] = voice_guard_dict
+    pre_snapshot = telemetry.get("pre", {}) if telemetry else {}
     hormone_trace = _apply_reinforcement_signals(
         reinforcement,
         length_plan=length_plan,
         reply_text=reply_text,
         profile=active_profile,
     )
+    if hormone_trace is not None:
+        api_pre = pre_snapshot.get("hormones") if isinstance(pre_snapshot, dict) else None
+        if api_pre:
+            hormone_trace.setdefault("api_pre", dict(api_pre))
+        hormone_trace.setdefault("api_post", state_engine.hormone_system.get_state())
     _reinforce_low_self_success(reinforcement, profile=active_profile)
     if telemetry is not None and hormone_trace:
         telemetry["hormone_adjustments"] = hormone_trace
@@ -1537,7 +1544,6 @@ def _finalize_chat_response(
         controller_trace=controller_trace,
         shorten=_shorten,
     )
-    pre_snapshot = telemetry.get("pre", {}) if telemetry else {}
     model_delta = _update_metric_history(
         reinforcement,
         intent=intent_prediction.intent,

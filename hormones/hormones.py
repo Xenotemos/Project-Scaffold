@@ -51,20 +51,25 @@ class HormoneSystem:
             oxytocin=40.0,
             noradrenaline=45.0,
         )
-        self._decay_factors: dict[str, float] = {
-            "dopamine": 0.97,
-            "serotonin": 0.98,
-            "cortisol": 0.94,
-            "oxytocin": 0.96,
-            "noradrenaline": 0.95,
+        # Each hormone decays toward its baseline at different speeds.
+        # The "high" factor applies when the current level sits above baseline
+        # (lingering effects), and "low" applies when it sits below baseline
+        # (recovery toward equilibrium).
+        self._decay_profiles: dict[str, dict[str, float]] = {
+            "dopamine": {"high": 0.995, "low": 0.985},
+            "serotonin": {"high": 0.992, "low": 0.984},
+            "cortisol": {"high": 0.965, "low": 0.98},
+            "oxytocin": {"high": 0.996, "low": 0.988},
+            "noradrenaline": {"high": 0.975, "low": 0.96},
         }
 
     def advance(self, seconds: float) -> None:
         """Apply natural decay over the provided interval."""
         decay_exponent = max(seconds / 2, 1.0)
-        for name, factor in self._decay_factors.items():
+        for name, profile in self._decay_profiles.items():
             current = getattr(self._levels, name)
             baseline = getattr(self._baseline, name)
+            factor = profile["high"] if current >= baseline else profile["low"]
             decayed = baseline + (current - baseline) * (factor ** decay_exponent)
             self._set_level(name, decayed)
 
