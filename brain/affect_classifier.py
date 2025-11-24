@@ -509,6 +509,8 @@ class TorchHeadAffectClassifier(AffectClassifier):
         if self._load_error:
             raise self._load_error
         device = self._select_device()
+        # Use fp16 weights by default (saves memory/bandwidth); DirectML will keep them on the GPU.
+        dtype = torch.float16
         try:
             tokenizer = AutoTokenizer.from_pretrained(self._base_model_path, trust_remote_code=True)
             if tokenizer.pad_token is None and tokenizer.eos_token is not None:
@@ -517,18 +519,18 @@ class TorchHeadAffectClassifier(AffectClassifier):
             base = AutoModelForCausalLM.from_pretrained(
                 self._base_model_path,
                 trust_remote_code=True,
-                torch_dtype=torch.float32,
+                torch_dtype=dtype,
             )
             base = PeftModel.from_pretrained(base, self._adapter_path)
             # training class
             from fine_tune.train_affect_lora import MultiHeadAffect
 
             model = MultiHeadAffect(base, base.config.hidden_size)
-            state = torch.load(self._head_path, map_location="cpu")
+            state = torch.load(self._head_path, map_location="cpu", weights_only=False)
             head_state = state.get("head") if isinstance(state, dict) else state
             model.load_state_dict(head_state, strict=False)
 
-            model.to(device)
+            model.to(device, dtype=dtype)
             model.eval()
         except Exception as exc:
             self._load_error = exc
