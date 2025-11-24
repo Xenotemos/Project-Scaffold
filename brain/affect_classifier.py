@@ -21,6 +21,11 @@ except Exception:  # pragma: no cover - optional dependency
     AutoTokenizer = None
     AutoModelForCausalLM = None
     PeftModel = None
+# Optional DirectML acceleration (AMD/Intel GPUs on Windows)
+try:
+    import torch_directml  # type: ignore[unused-ignore]
+except Exception:  # pragma: no cover - optional dependency
+    torch_directml = None
 try:
     import httpx  # type: ignore[unused-ignore]
 except Exception:  # pragma: no cover - optional dependency
@@ -158,6 +163,18 @@ class AffectClassification:
     tension: float
     confidence: float
     tags: tuple[str, ...]
+    safety: float | None = None
+    arousal: float | None = None
+    approach_avoid: float | None = None
+    inhibition_social: float | None = None
+    inhibition_vulnerability: float | None = None
+    inhibition_self_restraint: float | None = None
+    expectedness: str | None = None
+    momentum_delta: str | None = None
+    intent: tuple[str, ...] | None = None
+    affection_subtype: str | None = None
+    rpe: float | None = None
+    rationale: str | None = None
     metadata: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
@@ -168,6 +185,23 @@ class AffectClassification:
             "confidence": round(self.confidence, 4),
             "tags": list(self.tags),
         }
+        optional_fields = {
+            "safety": self.safety,
+            "arousal": self.arousal,
+            "approach_avoid": self.approach_avoid,
+            "inhibition_social": self.inhibition_social,
+            "inhibition_vulnerability": self.inhibition_vulnerability,
+            "inhibition_self_restraint": self.inhibition_self_restraint,
+            "expectedness": self.expectedness,
+            "momentum_delta": self.momentum_delta,
+            "intent": list(self.intent) if self.intent else None,
+            "affection_subtype": self.affection_subtype,
+            "rpe": self.rpe,
+            "rationale": self.rationale,
+        }
+        for key, value in optional_fields.items():
+            if value is not None and value != []:
+                payload[key] = value
         if self.metadata:
             payload["metadata"] = dict(self.metadata)
         return payload
@@ -310,7 +344,7 @@ class LoraAffectClassifier(AffectClassifier):
         parsed = self._parse_completion(completion)
         if not parsed:
             return super().classify(text)
-        metadata = {"source": "lora", "raw_completion": completion}
+        metadata = {"source": "lora", "raw_completion": None}
         return AffectClassification(
             valence=parsed.get("valence", 0.0),
             intimacy=parsed.get("intimacy", 0.0),
@@ -368,25 +402,220 @@ class LoraAffectClassifier(AffectClassifier):
             return None
         start = completion.find("{")
         end = completion.rfind("}")
-        if start == -1 or end == -1 or end <= start:
+        if start == -1:
             return None
-        snippet = completion[start : end + 1]
-        reasoning_tail = completion[end + 1 :].strip() if end + 1 < len(completion) else ""
+        if end == -1 or end <= start:
+            # attempt to salvage by appending a brace
+            snippet = completion[start:] + "}"
+            reasoning_tail = ""
+        else:
+            snippet = completion[start : end + 1]
+            reasoning_tail = completion[end + 1 :].strip() if end + 1 < len(completion) else ""
         try:
             data = json.loads(snippet)
         except json.JSONDecodeError:
-            return None
+            pass
+        else:
+            try:
+                intim = data.get("intimacy", data.get("intimity", 0.0))
+                tags = data.get("tags") if isinstance(data.get("tags"), list) else []
+                if len(tags) > 5:
+                    tags = tags[:5]
+                return {
+                    "valence": float(data.get("valence", 0.0)),
+                    "intimacy": float(intim),
+                    "tension": float(data.get("tension", 0.0)),
+                    "confidence": float(data.get("confidence", 0.85)),
+                    "tags": tags,
+                    "reasoning": None,
+                    "rationale": None,
+                }
+            except (TypeError, ValueError):
+                return None
+        # regex fallback for incomplete JSON
+        import re
+        def _grab(key, default=0.0):
+            m = re.search(rf'"{key}"\\s*:\\s*([-+]?[0-9]*\\.?[0-9]+)', completion)
+            return float(m.group(1)) if m else default
+        val = _grab("valence", 0.0)
+        intim = _grab("intimacy", _grab("intimity", 0.0))
+        tens = _grab("tension", 0.0)
+        conf = _grab("confidence", 0.0)
+        return {
+            "valence": val,
+            "intimacy": intim,
+            "tension": tens,
+            "confidence": conf,
+            "tags": [],
+            "reasoning": None,
+            "rationale": None,
+        }
+
+
+class TorchHeadAffectClassifier(AffectClassifier):
+    """Classifier that runs the trained regression heads directly (base + LoRA + head.pt)."""
+
+    def __init__(self, config: Mapping[str, Any]):
+        fallback_config = config.get("fallback_rules") or {}
+        super().__init__(fallback_config)
+        if not torch or not AutoTokenizer or not AutoModelForCausalLM or not PeftModel:
+            raise RuntimeError("Transformers/PEFT are required for the torch-head affect classifier.")
         try:
-            return {
-                "valence": float(data.get("valence", 0.0)),
-                "intimacy": float(data.get("intimacy", 0.0)),
-                "tension": float(data.get("tension", 0.0)),
-                "confidence": float(data.get("confidence", 0.85)),
-                "tags": data.get("tags") or [],
-                "reasoning": reasoning_tail or data.get("reasoning"),
-            }
-        except (TypeError, ValueError):
-            return None
+            from fine_tune.train_affect_lora import (
+                MultiHeadAffect,
+                INTENTS,
+                EXPECTEDNESS,
+                MOMENTUM,
+                AFFECTION_SUB,
+            )
+        except Exception as exc:  # pragma: no cover - import-time guard
+            raise RuntimeError(f"Unable to import training heads: {exc}") from exc
+
+        self._base_model_path = config.get("base_model_path")
+        self._adapter_path = config.get("adapter_path")
+        self._head_path = config.get("head_path")
+        if not self._base_model_path or not self._adapter_path or not self._head_path:
+            raise ValueError("torch_head config must include base_model_path, adapter_path, head_path.")
+
+        self._device_pref = (config.get("device") or "auto").lower()
+        self._model_confidence = float(config.get("model_confidence", 0.9))
+        self._max_length = int(config.get("max_length", 256))
+        self._intents = INTENTS
+        self._expectedness = EXPECTEDNESS
+        self._momentum = MOMENTUM
+        self._aff_sub = AFFECTION_SUB
+
+        self._tokenizer = None
+        self._model: Any = None
+        self._device: torch.device | Any = None
+        self._load_error: Exception | None = None
+
+    def _select_device(self) -> torch.device | Any:
+        if self._device_pref == "dml" or (self._device_pref == "auto" and torch_directml):
+            try:
+                return torch_directml.device()  # type: ignore[attr-defined]
+            except Exception:
+                pass
+        if self._device_pref == "cuda" and torch.cuda.is_available():
+            return torch.device("cuda")
+        if self._device_pref == "cpu":
+            return torch.device("cpu")
+        # auto fallback
+        return torch.device("cpu")
+
+    def _ensure_loaded(self) -> None:
+        if self._model is not None and self._tokenizer is not None:
+            return
+        if self._load_error:
+            raise self._load_error
+        device = self._select_device()
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(self._base_model_path, trust_remote_code=True)
+            if tokenizer.pad_token is None and tokenizer.eos_token is not None:
+                tokenizer.pad_token = tokenizer.eos_token
+
+            base = AutoModelForCausalLM.from_pretrained(
+                self._base_model_path,
+                trust_remote_code=True,
+                torch_dtype=torch.float32,
+            )
+            base = PeftModel.from_pretrained(base, self._adapter_path)
+            # training class
+            from fine_tune.train_affect_lora import MultiHeadAffect
+
+            model = MultiHeadAffect(base, base.config.hidden_size)
+            state = torch.load(self._head_path, map_location="cpu")
+            head_state = state.get("head") if isinstance(state, dict) else state
+            model.load_state_dict(head_state, strict=False)
+
+            model.to(device)
+            model.eval()
+        except Exception as exc:
+            self._load_error = exc
+            raise
+
+        self._tokenizer = tokenizer
+        self._model = model
+        self._device = device
+
+    def classify(self, text: str) -> AffectClassification:
+        if not text.strip():
+            return super().classify(text)
+        try:
+            self._ensure_loaded()
+        except Exception:
+            return super().classify(text)
+
+        t0 = time.time()
+        toks = self._tokenizer(
+            text.strip(),
+            return_tensors="pt",
+            truncation=True,
+            max_length=self._max_length,
+        )
+        toks = {k: v.to(self._device) for k, v in toks.items()}
+        with torch.no_grad():
+            out = self._model(**toks)
+        latency = (time.time() - t0) * 1000.0
+
+        axes = out["axes"][0].detach().cpu().tolist()
+        val, intim, tens = axes
+        misc = out["misc"][0].detach().cpu().tolist()
+        inh_self = float(out["inh_self"][0].detach().cpu().item())
+
+        expected_idx = int(out["expectedness"][0].argmax().item())
+        momentum_idx = int(out["momentum"][0].argmax().item())
+        aff_idx = int(out["aff_sub"][0].argmax().item())
+
+        intent_logits = out["intent"][0].detach()
+        intent_probs = torch.sigmoid(intent_logits).cpu().tolist()
+        intents = tuple(lbl for lbl, p in zip(self._intents, intent_probs) if p >= 0.35)
+
+        def clamp(x, lo, hi):
+            return max(lo, min(hi, float(x)))
+
+        payload = {
+            "valence": clamp(val, -1.0, 1.0),
+            "intimacy": clamp(intim, 0.0, 1.0),
+            "tension": clamp(tens, -1.0, 1.0),
+            "confidence": self._model_confidence,
+            "tags": _derive_tags(val, intim, tens, text.lower()),
+            "safety": clamp(misc[3], -1.0, 1.0),
+            "arousal": clamp(misc[2], -1.0, 1.0),
+            "approach_avoid": clamp(misc[4], -1.0, 1.0),
+            "inhibition_social": clamp(misc[6], 0.0, 1.0),
+            "inhibition_vulnerability": clamp(misc[7], 0.0, 1.0),
+            "inhibition_self_restraint": clamp(inh_self, 0.0, 1.0),
+            "expectedness": self._expectedness[expected_idx],
+            "momentum_delta": self._momentum[momentum_idx],
+            "affection_subtype": self._aff_sub[aff_idx],
+            "rpe": clamp(misc[5], -1.0, 1.0),
+            "intent": intents,
+        }
+        metadata = {
+            "source": "torch_head",
+            "latency_ms": round(latency, 1),
+            "device": str(self._device),
+        }
+        return AffectClassification(
+            valence=payload["valence"],
+            intimacy=payload["intimacy"],
+            tension=payload["tension"],
+            confidence=payload["confidence"],
+            tags=tuple(payload["tags"]),
+            safety=payload["safety"],
+            arousal=payload["arousal"],
+            approach_avoid=payload["approach_avoid"],
+            inhibition_social=payload["inhibition_social"],
+            inhibition_vulnerability=payload["inhibition_vulnerability"],
+            inhibition_self_restraint=payload["inhibition_self_restraint"],
+            expectedness=payload["expectedness"],
+            momentum_delta=payload["momentum_delta"],
+            intent=payload["intent"],
+            affection_subtype=payload["affection_subtype"],
+            rpe=payload["rpe"],
+            metadata=metadata,
+        )
 
 
 class LlamaCppAffectClassifier(AffectClassifier):
@@ -412,6 +641,7 @@ class LlamaCppAffectClassifier(AffectClassifier):
         self._top_p = float(config.get("top_p", 0.9))
         self._model_confidence = float(config.get("model_confidence", 0.85))
         self._timeout = float(config.get("timeout", 20.0))
+        self._soft_timeout = float(config.get("soft_timeout", min(self._timeout, 1.0)))
         self._readiness_timeout = float(config.get("readiness_timeout", 30.0))
         self._start_server = bool(config.get("start_server", True))
 
@@ -430,11 +660,15 @@ class LlamaCppAffectClassifier(AffectClassifier):
             latency = time.time() - start
             if not parsed:
                 return super().classify(text)
+            raw_debug = None
+            if os.environ.get("AFFECT_DEBUG_RAW"):
+                raw_debug = completion[:240]
             metadata = {
                 "source": "llama_cpp",
-                "raw_completion": completion,
+                "raw_completion": raw_debug,
                 "latency_ms": round(latency * 1000, 1),
                 "reasoning": parsed.get("reasoning"),
+                "rationale": parsed.get("rationale"),
             }
             return AffectClassification(
                 valence=parsed.get("valence", 0.0),
@@ -442,6 +676,18 @@ class LlamaCppAffectClassifier(AffectClassifier):
                 tension=parsed.get("tension", 0.0),
                 confidence=parsed.get("confidence", self._model_confidence),
                 tags=tuple(parsed.get("tags") or ()),
+                safety=parsed.get("safety"),
+                arousal=parsed.get("arousal"),
+                approach_avoid=parsed.get("approach_avoid"),
+                inhibition_social=parsed.get("inhibition_social"),
+                inhibition_vulnerability=parsed.get("inhibition_vulnerability"),
+                inhibition_self_restraint=parsed.get("inhibition_self_restraint"),
+                expectedness=parsed.get("expectedness"),
+                momentum_delta=parsed.get("momentum_delta"),
+                intent=tuple(parsed.get("intent") or ()),
+                affection_subtype=parsed.get("affection_subtype"),
+                rpe=parsed.get("rpe"),
+                rationale=parsed.get("rationale"),
                 metadata=metadata,
             )
         except Exception:
@@ -454,8 +700,8 @@ class LlamaCppAffectClassifier(AffectClassifier):
             self._client = httpx.Client(timeout=self._timeout)
         models_url = f"http://{self._host}:{self._port}/v1/models"
 
-        # Fast, low-timeout probe; sidecar should already be started at app startup.
-        probe_timeout = min(self._timeout, 0.6)
+        # Fast probe; give a bit more than half a second to avoid flapping on busy boots.
+        probe_timeout = min(self._timeout, 1.2)
         try:
             response = self._client.get(models_url, timeout=probe_timeout)
             if response.status_code == 200:
@@ -467,58 +713,144 @@ class LlamaCppAffectClassifier(AffectClassifier):
 
     def _query_model(self, text: str) -> str:
         assert self._client is not None
-        system_prompt = (
-            "You are an affect scorer. Return ONLY a JSON object with keys "
-            'valence (float -1..1), intimacy (float 0..1), tension (float 0..1), '
-            'confidence (float 0..1), and tags (array of strings). No prose.'
+        prompt = (
+            "You are an affect scorer. Respond with exactly one JSON object using these keys: "
+            "valence (-1..1), intimacy (0..1), tension (-1..1), safety (-1..1), arousal (-1..1), "
+            "approach_avoid (-1..1), inhibition_social (0..1), inhibition_vulnerability (0..1), "
+            "inhibition_self_restraint (0..1), expectedness (expected|mild_surprise|strong_surprise), "
+            "momentum_delta (with_trend|soft_turn|hard_turn), intent (array: reassure|comfort|flirt_playful|dominate|apologize|boundary|manipulate|deflect|vent|inform|seek_support), "
+            "affection_subtype (warm|forced|defensive|sudden|needy|playful|manipulative|overwhelmed|intimate|confused|none), "
+            "rpe (-1..1), confidence (0..1), tags (array; use []). "
+            "Keep rationale optional and under 30 words if included. Do not default everything to zero unless the input is truly neutral/empty. "
+            "Even brief or ambiguous inputs should receive small non-zero scores that reflect tone (e.g., +/-0.05..0.15) and lower confidence when uncertain. "
+            "Example:\n"
+            "Input: I feel calm and close to you.\n"
+            "JSON: {\"valence\":0.4,\"intimacy\":0.55,\"tension\":0.05,\"safety\":0.4,\"arousal\":0.1,\"approach_avoid\":0.35,\"inhibition_social\":0.1,\"inhibition_vulnerability\":0.15,\"inhibition_self_restraint\":0.1,\"expectedness\":\"expected\",\"momentum_delta\":\"with_trend\",\"intent\":[\"reassure\"],\"affection_subtype\":\"warm\",\"rpe\":0.2,\"confidence\":0.7,\"tags\":[]}\n"
+            "Now score this input without any extra text.\n"
+            "Input: "
+            + text.strip()
+            + "\nJSON:"
         )
         payload = {
             "model": self._alias,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": text.strip()},
-            ],
-            "stream": False,
+            "prompt": prompt,
             "temperature": self._temperature,
-            "top_p": self._top_p,
-            "max_tokens": max(16, self._max_new_tokens),
+            "max_tokens": max(self._max_new_tokens, 32),
+            "stop": ["\nInput:", "Input:", "\n\n"],
         }
-        response = self._client.post(
-            f"http://{self._host}:{self._port}/v1/chat/completions",
+        resp = self._client.post(
+            f"http://{self._host}:{self._port}/v1/completions",
             json=payload,
+            timeout=max(self._soft_timeout, self._timeout),
         )
-        response.raise_for_status()
-        data = response.json()
+        resp.raise_for_status()
+        data = resp.json()
         choices = data.get("choices") or []
         if not choices:
             raise RuntimeError("No choices returned from affect llama server.")
-        message = choices[0].get("message") or {}
-        content = (message.get("content") or "").strip()
-        reasoning = (message.get("reasoning_content") or "").strip()
-        return content if content else reasoning
+        return (choices[0].get("text") or "").strip()
 
     @staticmethod
     def _parse_completion(completion: str) -> dict[str, Any] | None:
         if not completion:
             return None
         start = completion.find("{")
-        end = completion.rfind("}")
-        if start == -1 or end == -1 or end <= start:
+        if start == -1:
             return None
-        snippet = completion[start : end + 1]
+        end = completion.rfind("}")
+        snippet = completion[start : end + 1] if end != -1 else completion[start:] + "}"
+        if snippet.count("{") > snippet.count("}"):
+            snippet = snippet + "}"
+        data = None
         try:
             data = json.loads(snippet)
-        except json.JSONDecodeError:
-            return None
+        except Exception:
+            data = None
+        # regex fallback
+        if data is None:
+            import re
+
+            def grab(key, default=0.0):
+                m = re.search(rf'"{key}"\\s*:\\s*([-+]?[0-9]*\\.?[0-9]+)', completion)
+                return float(m.group(1)) if m else default
+            val = grab("valence", 0.0)
+            intim = grab("intimacy", grab("intimity", 0.0))
+            tens = grab("tension", 0.0)
+            conf = grab("confidence", 0.65)
+            return {
+                "valence": val,
+                "intimacy": intim,
+                "tension": tens,
+                "confidence": conf,
+                "tags": [],
+                "safety": grab("safety", None),
+                "arousal": grab("arousal", None),
+                "approach_avoid": grab("approach_avoid", None),
+                "inhibition_social": grab("inhibition_social", None),
+                "inhibition_vulnerability": grab("inhibition_vulnerability", None),
+                "inhibition_self_restraint": grab("inhibition_self_restraint", None),
+                "rpe": grab("rpe", None),
+                "reasoning": None,
+                "rationale": None,
+            }
         try:
+            intim = data.get("intimacy", data.get("intimity", 0.0))
+            tags_raw = data.get("tags") if isinstance(data.get("tags"), list) else []
+            tags = [str(tag)[:48] for tag in tags_raw if isinstance(tag, (str, int, float))]
+            if len(tags) > 5:
+                tags = tags[:5]
+            intents_raw = data.get("intent") if isinstance(data.get("intent"), list) else []
+            intent_allowed = {
+                "reassure",
+                "comfort",
+                "flirt_playful",
+                "dominate",
+                "apologize",
+                "boundary",
+                "manipulate",
+                "deflect",
+                "vent",
+                "inform",
+                "seek_support",
+            }
+            intents = tuple(
+                lbl for lbl in (str(x).strip() for x in intents_raw) if lbl in intent_allowed
+            )[:5]
+            expectedness_allowed = {"expected", "mild_surprise", "strong_surprise"}
+            momentum_allowed = {"with_trend", "soft_turn", "hard_turn"}
+            affection_allowed = {
+                "warm",
+                "forced",
+                "defensive",
+                "sudden",
+                "needy",
+                "playful",
+                "manipulative",
+                "overwhelmed",
+                "intimate",
+                "confused",
+                "none",
+            }
             return {
                 "valence": float(data.get("valence", 0.0)),
-                "intimacy": float(data.get("intimacy", 0.0)),
+                "intimacy": float(intim),
                 "tension": float(data.get("tension", 0.0)),
                 "confidence": float(data.get("confidence", 0.85)),
-                "tags": data.get("tags") or [],
+                "tags": tags,
+                "safety": _maybe_float(data.get("safety")),
+                "arousal": _maybe_float(data.get("arousal")),
+                "approach_avoid": _maybe_float(data.get("approach_avoid")),
+                "inhibition_social": _maybe_float(data.get("inhibition_social")),
+                "inhibition_vulnerability": _maybe_float(data.get("inhibition_vulnerability")),
+                "inhibition_self_restraint": _maybe_float(data.get("inhibition_self_restraint")),
+                "expectedness": data.get("expectedness") if data.get("expectedness") in expectedness_allowed else None,
+                "momentum_delta": data.get("momentum_delta") if data.get("momentum_delta") in momentum_allowed else None,
+                "intent": intents,
+                "affection_subtype": data.get("affection_subtype") if data.get("affection_subtype") in affection_allowed else None,
+                "rpe": _maybe_float(data.get("rpe")),
+                "rationale": _trim_text(data.get("rationale"), 160),
             }
-        except (TypeError, ValueError):
+        except Exception:
             return None
 
 
@@ -540,6 +872,11 @@ def load_affect_classifier(config_path: str | Path | None = None) -> AffectClass
     if cls_type == "lora":
         try:
             return LoraAffectClassifier(config)
+        except Exception:
+            return AffectClassifier(config.get("fallback_rules") or {})
+    if cls_type == "torch_head":
+        try:
+            return TorchHeadAffectClassifier(config)
         except Exception:
             return AffectClassifier(config.get("fallback_rules") or {})
     if cls_type in {"llama_cpp", "gguf"}:
@@ -590,10 +927,52 @@ def _derive_tags(
     return tags
 
 
+def _maybe_float(value: Any) -> float | None:
+    try:
+        if value is None:
+            return None
+        return float(value)
+    except Exception:
+        return None
+
+
+def _trim_text(value: Any, max_chars: int) -> str | None:
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    if not value:
+        return None
+    return value[:max_chars]
+
+
+def _is_empty_payload(payload: Mapping[str, Any] | None) -> bool:
+    """Detect degenerate model outputs so we can fall back to heuristics."""
+    if not payload:
+        return True
+    numeric_keys = [
+        "valence",
+        "intimacy",
+        "tension",
+        "confidence",
+        "safety",
+        "arousal",
+        "approach_avoid",
+        "rpe",
+    ]
+    if any(abs(float(payload.get(k, 0.0) or 0.0)) > 0.005 for k in numeric_keys):
+        return False
+    if payload.get("tags"):
+        return False
+    if payload.get("intent"):
+        return False
+    return True
+
+
 __all__ = [
     "AffectClassifier",
     "AffectClassification",
     "LoraAffectClassifier",
+    "TorchHeadAffectClassifier",
     "LlamaCppAffectClassifier",
     "load_affect_classifier",
 ]

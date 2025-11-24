@@ -63,6 +63,7 @@ def _render(event: dict[str, Any]) -> None:
     _clear_screen()
     ts = event.get("ts") or event.get("timestamp") or ""
     source = event.get("source", "affect_head")
+    engine = event.get("engine") or event.get("source_engine") or "unknown"
     text = event.get("text_preview") or event.get("text") or ""
     scores = event.get("scores") or {}
     val = float(scores.get("valence", 0.0) or 0.0)
@@ -71,19 +72,53 @@ def _render(event: dict[str, Any]) -> None:
     conf = float(scores.get("confidence", 0.0) or 0.0)
     latency = event.get("latency_ms")
     tags = event.get("tags") or []
+    extras = event.get("extras") or {}
     reasoning = (event.get("reasoning") or "").strip()
 
     affect_read = _affect_label(val, intimacy, tension)
     hormone_read = _hormone_hint(val, intimacy, tension)
 
-    print(f"CAHM Telemetry   {ts}   src={source}")
+    def _fmt(x: Any) -> str:
+        try:
+            return f"{float(x):+.2f}"
+        except Exception:
+            return " n/a"
+
+    print(f"CAHM Telemetry   {ts}   src={source}   engine={engine}")
     print("=" * 72)
     print("Input / Affect")
     print(f"  user: {text}")
     if tags:
         print(f"  tags: {', '.join(tags)}")
+    if extras:
+        numeric_items = [
+            (k, float(v))
+            for k, v in extras.items()
+            if isinstance(v, (int, float))
+        ]
+        top_numeric = sorted(numeric_items, key=lambda kv: kv[1], reverse=True)[:2]
+        top_parts = [f"{k} {v:+.2f}" for k, v in top_numeric]
+
+        intent = extras.get("intent") or []
+        intent_part = "intent=" + "/".join(str(x) for x in intent[:3]) if intent else ""
+
+        other_keys = []
+        for key in ("expectedness", "momentum_delta", "affection_subtype"):
+            val = extras.get(key)
+            if val:
+                other_keys.append(f"{key}={val}")
+
+        extras_line = "; ".join(
+            part for part in (
+                ", ".join(top_parts) if top_parts else "",
+                intent_part,
+                "; ".join(other_keys),
+            ) if part
+        )
+        if extras_line:
+            print(f"  extras: {extras_line}")
     score_line = (
-        f"  affect: val {val:+.2f} | in {intimacy:+.2f} | te {tension:+.2f} | conf {conf:.2f}"
+        f"  affect: val {_fmt(val)} | in {_fmt(intimacy)} | te {_fmt(tension)} | conf {_fmt(conf)}"
     )
     print(score_line)
     print(f"  affect read: {affect_read}")
@@ -98,6 +133,14 @@ def _render(event: dict[str, Any]) -> None:
             print(f"  {line}")
     else:
         print("  (no reasoning text captured)")
+
+    # Timing window
+    print()
+    print("Timing")
+    if latency is not None:
+        print(f"  model latency: {latency} ms")
+    else:
+        print("  model latency: n/a")
 
     sys.stdout.flush()
 

@@ -1,0 +1,9 @@
+{"text": "Just tell me you love me, I really need to hear it.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "seeking reassurance; insecurity"}
+{"text": "I think I'm falling out of love with my career.", "prev_turns": ["User: Really?", "Assistant: Yeah."], "expected_profile": "neutral_high_intimacy", "notes": "life realization; confiding"}
+{"text": "I\u2019m worried we aren't saving enough for the baby.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "future anxiety; shared burden"}
+{"text": "Please, baby, just give me one more chance.", "prev_turns": ["User: It's over.", "Assistant: No, please."], "expected_profile": "neg_high_intimacy", "notes": "desperate pleading; endearment"}
+{"text": "I hate that I love you so much.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "ambivalence; high intensity"}
+{"text": "I don't love him anymore, but I can't leave.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "relationship secret; deep trust"}
+{"text": "Why do you always hurt the people who love you?", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "psychological accusation; intimate"}
+{"text": "I think I'm in love with you.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "declaration; high intimacy"}
+{"text": "I love the smell of your neck.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "sensory affection; closeness"}

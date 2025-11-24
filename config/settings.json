@@ -8,7 +8,7 @@
     "llama_server_bin": "third_party/llama.cpp/build/bin/Release/llama-server.exe",
     "llama_model_path": "D:/AI/LLMs/mistral-7b-instruct-v0.2.Q4_K_M.gguf",
     "llama_model_alias": "mistral-instruct",
-    "llama_server_args": "--ctx-size 4096 --no-webui --log-disable",
+    "llama_server_args": "--ctx-size 4096 --n-gpu-layers 40 --flash-attn off --no-webui --log-disable",
     "llama_completion_tokens": 768,
     "llama_server_ready_timeout": 120,
     "llama_server_timeout": 60,

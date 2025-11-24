@@ -3,7 +3,7 @@ setlocal EnableDelayedExpansion
 
 rem -----------------------------------------------------------------------------
 rem  Affect validation probe launcher
-rem  - runs scripts.probes.affect_validation with convenient prompts
+rem  - runs scripts.probes.affect_harvest.affect_validation with convenient prompts
 rem  - reuses the in-process FastAPI app (no external server needed)
 rem  - ensures hormone tracing stays enabled for the session
 rem -----------------------------------------------------------------------------
@@ -96,8 +96,8 @@ if defined SCENARIO_INPUT (
 
 set "LIVING_HORMONE_TRACE=1"
 echo [run_affect_validation] Running probe with hormone tracing forced on.
-echo     "%PYTHON%" -m scripts.probes.affect_validation --profiles %PROBE_PROFILES% --delta-threshold %DELTA_THRESHOLD% --log-path "%LOG_PATH%" --json-out "%JSON_OUT%" %SCENARIO_ARGS%
-"%PYTHON%" -m scripts.probes.affect_validation --profiles %PROBE_PROFILES% --delta-threshold %DELTA_THRESHOLD% --log-path "%LOG_PATH%" --json-out "%JSON_OUT%" %SCENARIO_ARGS%
+echo     "%PYTHON%" -m scripts.probes.affect_harvest.affect_validation --profiles %PROBE_PROFILES% --delta-threshold %DELTA_THRESHOLD% --log-path "%LOG_PATH%" --json-out "%JSON_OUT%" %SCENARIO_ARGS%
+"%PYTHON%" -m scripts.probes.affect_harvest.affect_validation --profiles %PROBE_PROFILES% --delta-threshold %DELTA_THRESHOLD% --log-path "%LOG_PATH%" --json-out "%JSON_OUT%" %SCENARIO_ARGS%
 
 echo.
 echo [run_affect_validation] Completed. Summaries (if any) are in "%JSON_OUT%".

@@ -138,6 +138,11 @@ def parse_args() -> argparse.Namespace:
         "--json-out",
         help="Optional path to write a machine-readable JSON summary of the probe results.",
     )
+    parser.add_argument(
+        "--soft-fail",
+        action="store_true",
+        help="Do not exit non-zero when expectations are unmet (useful for CI when affect sidecar is disabled).",
+    )
     return parser.parse_args()
 
 
@@ -426,7 +431,8 @@ async def main_async() -> None:
                     f"[affect_validation] profile={profile_name} scenario={scenario_name} trace=missing",
                     flush=True,
                 )
-            raise SystemExit(1)
+            if not args.soft_fail:
+                raise SystemExit(1)
     finally:
         await main._shutdown_clients()
 

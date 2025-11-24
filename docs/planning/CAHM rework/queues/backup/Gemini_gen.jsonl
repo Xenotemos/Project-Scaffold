@@ -1,0 +1,655 @@
+{"text": "We are pleased to inform you that your request has been processed successfully.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "professional satisfaction; polite and distant"}
+{"text": "I appreciate you bringing this to my attention promptly.", "prev_turns": ["User: There's a leak in the hallway.", "Assistant: I'll alert maintenance."], "expected_profile": "pos_low_intimacy", "notes": "formal gratitude; work context"}
+{"text": "You’ve done an excellent job adhering to the new safety protocols.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "managerial praise; high inhibition/distance"}
+{"text": "It is good to see that the system is functioning as intended.", "prev_turns": ["User: The server is back up.", "Assistant: Acknowledged."], "expected_profile": "pos_low_intimacy", "notes": "technical satisfaction; neutral-positive valence"}
+{"text": "Thank you for your cooperation during the inspection.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "polite authority; low intimacy"}
+{"text": "I am glad to hear that the issue was resolved without further complications.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "distant relief; customer service tone"}
+{"text": "Your input was valuable in reaching this conclusion.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "professional validation; no personal closeness"}
+{"text": "We are happy to extend this offer to you based on your history.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "transactional positivity; corporate we"}
+{"text": "That sounds like a prudent course of action.", "prev_turns": ["User: I think I'll sell the stock now.", "Assistant: Market trends suggest a peak."], "expected_profile": "pos_low_intimacy", "notes": "detached approval; objective advice"}
+{"text": "I trust you will find the accommodations satisfactory.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "formal politeness; hospitality context"}
+{"text": "It is reassuring to know the schedule is back on track.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "logistical relief; distant"}
+{"text": "Please accept my congratulations on your recent appointment.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "formal etiquette; low intimacy"}
+{"text": "I am relieved to see the numbers balancing out correctly.", "prev_turns": ["User: The audit is finished.", "Assistant: Any discrepancies?"], "expected_profile": "pos_low_intimacy", "notes": "workplace relief; distinct boundaries"}
+{"text": "You handled that situation with commendable professionalism.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "performance review style; positive but cool"}
+{"text": "That is a very helpful suggestion, thank you.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "polite acknowledgment; social distance"}
+{"text": "I am pleased to assist you with this transaction.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "service script; standard positive"}
+{"text": "It is fortunate that we caught the error in time.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "impersonal relief; procedural focus"}
+{"text": "Your punctuality is noted and appreciated.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "mild praise; strict boundary"}
+{"text": "I am happy to direct you to the correct department.", "prev_turns": ["User: This isn't what I ordered.", "Assistant: I understand."], "expected_profile": "pos_low_intimacy", "notes": "helpful deflection; polite distance"}
+{"text": "The team is grateful for your contribution to the project.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "collective gratitude; no personal attachment"}
+{"text": "That is certainly a positive development for the company.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "corporate observation; low intimacy"}
+{"text": "I am glad you found the manual useful.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "simple courtesy; utilitarian"}
+{"text": "Rest assured, the matter is being handled.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "calming reassurance; professional barrier"}
+{"text": "It is good that you are prioritizing your health.", "prev_turns": ["User: I'm taking a sick day.", "Assistant: Policy allows for that."], "expected_profile": "pos_low_intimacy", "notes": "generic well-wishing; hr tone"}
+{"text": "We appreciate your business and hope to see you again.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "closing script; polite/distant"}
+{"text": "Here is the password to my personal drive; I haven't given it to anyone else.", "prev_turns": ["User: Are you sure?", "Assistant: Yes."], "expected_profile": "neutral_high_intimacy", "notes": "high trust/vulnerability; flat tone"}
+{"text": "I left the spare key under the third flower pot, just in case.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "domestic logistics; assumes closeness"}
+{"text": "I’m going to try sleeping without the medication tonight.", "prev_turns": ["User: How are you feeling?", "Assistant: A bit steady."], "expected_profile": "neutral_high_intimacy", "notes": "medical disclosure to trusted partner"}
+{"text": "Can you check this mole on my back? It looks different.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "body vulnerability; neutral delivery"}
+{"text": "My mother called again, but I didn't pick up this time.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "family secret/boundary sharing; calm"}
+{"text": "I think I'm finally ready to tell you what happened in Boston.", "prev_turns": ["User: You've been quiet.", "Assistant: I know."], "expected_profile": "neutral_high_intimacy", "notes": "disclosure of past; high trust"}
+{"text": "I put you as my emergency contact on the intake forms.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "logistical sign of bonding; flat valence"}
+{"text": "I don't want to go to the party, can we just stay in?", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "social honesty; comfort in shared space"}
+{"text": "I transferred the funds to our joint account this morning.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "financial entwinement; mundane tone"}
+{"text": "I realized I've been projecting my father's issues onto you.", "prev_turns": ["User: Why did you say that?", "Assistant: I was thinking."], "expected_profile": "neutral_high_intimacy", "notes": "psychological insight; relationship maintenance"}
+{"text": "Can you hold this for me? My hands are shaking.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "physical vulnerability; calm request"}
+{"text": "I need you to know that I updated my will yesterday.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "morbid logistics; high trust"}
+{"text": "I stopped wearing the ring, but I kept it in the drawer.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "symbolic disclosure; quiet admission"}
+{"text": "I’m not asking for advice, I just needed you to know.", "prev_turns": ["User: Should I fix it?", "Assistant: No."], "expected_profile": "neutral_high_intimacy", "notes": "seeking witness; high intimacy"}
+{"text": "I remember the way you looked at me that morning.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "shared memory; neutral reflection"}
+{"text": "Please, I can't do this alone anymore.", "prev_turns": ["User: It's going to be fine.", "Assistant: No, it's not."], "expected_profile": "neg_high_intimacy", "notes": "desperation/pleading; high intimacy"}
+{"text": "Don't look at me like that, it breaks my heart.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "emotional pain; reaction to gaze"}
+{"text": "I promise I'll change, just don't leave me here.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "bargaining/fear of abandonment; high arousal"}
+{"text": "It hurts so much when you shut me out.", "prev_turns": ["User: I need space.", "Assistant: But I need you."], "expected_profile": "neg_high_intimacy", "notes": "vulnerability/pain; seeking closeness"}
+{"text": "I feel like I'm disappearing and you don't even notice.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "existential dread/relationship fear"}
+{"text": "I am begging you to listen to me for once.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "frustrated plea; high intimacy conflict"}
+{"text": "I know I messed up, I am so ashamed.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "shame/confession; seeking absolution"}
+{"text": "Why do you always push me away when I need you?", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "accusatory hurt; attachment distress"}
+{"text": "I can't sleep knowing you're angry with me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "dependency/distress; intimate"}
+{"text": "Just hold me, please, I don't want to talk.", "prev_turns": ["User: What's wrong?", "Assistant: Everything."], "expected_profile": "neg_high_intimacy", "notes": "seeking physical comfort; negative affect"}
+{"text": "I am not authorized to discuss that with you.", "prev_turns": ["User: Just tell me who called.", "Assistant: I cannot do that."], "expected_profile": "tense_boundary_low_intimacy", "notes": "firm refusal; bureaucratic boundary"}
+{"text": "Step back, you are in my personal space.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "physical boundary assertion; tense"}
+{"text": "That is the final warning regarding this matter.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "disciplinary threat; low intimacy"}
+{"text": "I do not have to explain my decisions to you.", "prev_turns": ["User: Why did you choose him?", "Assistant: It is decided."], "expected_profile": "tense_boundary_low_intimacy", "notes": "rejection of accountability; cold"}
+{"text": "Please lower your voice or I will end this call.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "enforcing behavioral norms; tense"}
+{"text": "My schedule is full; I cannot accommodate you.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "curt rejection; professional distance"}
+{"text": "Access denied.", "prev_turns": ["User: Let me in.", "Assistant: No."], "expected_profile": "tense_boundary_low_intimacy", "notes": "absolute refusal; extremely low intimacy"}
+{"text": "Nice try, but you'll have to do better than that.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "competitive banter; low warmth"}
+{"text": "I see logic isn't your strong suit today.", "prev_turns": ["User: I thought 2+2 was 5.", "Assistant: Clearly."], "expected_profile": "playful_low_intimacy", "notes": "sarcastic teasing; intellectual distance"}
+{"text": "Bold strategy, let's see if it pays off.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "ironic observation; detached amusement"}
+{"text": "Your application has been approved for the next stage of the process.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "administrative success; formal tone"}
+{"text": "I can confirm that the package was delivered to the reception desk.", "prev_turns": ["User: Where is my shipment?", "Assistant: Tracking shows delivered."], "expected_profile": "pos_low_intimacy", "notes": "logistical confirmation; polite distance"}
+{"text": "It is a pleasure to see such efficient work from your team.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "professional compliment; low intimacy"}
+{"text": "Thank you for following the submission guidelines so precisely.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "compliance praise; bureaucratic"}
+{"text": "The committee was impressed by the technical report you drafted.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "third-party validation; formal"}
+{"text": "I am happy to facilitate this transfer for you immediately.", "prev_turns": ["User: I need to move funds.", "Assistant: Understood."], "expected_profile": "pos_low_intimacy", "notes": "service readiness; transactional"}
+{"text": "Please let us know if you require further assistance with the software.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "standard support closing; polite"}
+{"text": "That is a valid point regarding the logistical challenges.", "prev_turns": ["User: Shipping will be delayed.", "Assistant: I see."], "expected_profile": "pos_low_intimacy", "notes": "objective agreement; professional discussion"}
+{"text": "We are optimistic about the quarterly results based on this data.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "corporate optimism; 'we' usage"}
+{"text": "Your patience during this maintenance period is appreciated.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "impersonal gratitude; announcement style"}
+{"text": "I am glad the instructions were clear enough to follow.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "teacher/student dynamic; distant validation"}
+{"text": "It is good to have that clarified for the official record.", "prev_turns": ["User: The date was actually the 5th.", "Assistant: Noted."], "expected_profile": "pos_low_intimacy", "notes": "procedural satisfaction; low emotion"}
+{"text": "The system update was successful and all services are restored.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "technical status update; positive/neutral"}
+{"text": "We look forward to your participation in the upcoming seminar.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "formal invitation; polite expectation"}
+{"text": "I am relieved to confirm the data was fully recovered.", "prev_turns": ["User: Did we lose the files?", "Assistant: checking backups."], "expected_profile": "pos_low_intimacy", "notes": "professional relief; IT context"}
+{"text": "That solution appears to be viable for the current budget.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "fiscal approval; objective"}
+{"text": "Thank you for your prompt payment of the invoice.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "financial courtesy; transactional"}
+{"text": "I am pleased to offer you a seat at the conference table.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "status grant; formal"}
+{"text": "It is reassuring that the safety checks passed without incident.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "regulatory relief; distant"}
+{"text": "Your feedback has been noted in the system for review.", "prev_turns": ["User: This interface is clunky.", "Assistant: Logging that now."], "expected_profile": "pos_low_intimacy", "notes": "customer service acknowledgment; neutral-pos"}
+{"text": "We are happy to accommodate your scheduling request.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "administrative flexibility; polite"}
+{"text": "The error has been rectified and the account is active.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "problem resolution; distinct boundary"}
+{"text": "I appreciate your adherence to the dress code policy.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "enforcement praise; managerial"}
+{"text": "That is a satisfactory outcome for all parties involved.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "mediation conclusion; detached"}
+{"text": "We are glad to be of service to your organization.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "B2B politeness; no personal warmth"}
+{"text": "I dreamt about that house we lived in again last night.", "prev_turns": ["User: You look tired.", "Assistant: I didn't sleep well."], "expected_profile": "neutral_high_intimacy", "notes": "sharing subconscious; high familiarity"}
+{"text": "I haven't told my sister yet, only you know.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "exclusive trust; secret keeping"}
+{"text": "Can you pick up my prescription? I'm too tired to drive.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "favor request; assumes partner role"}
+{"text": "I think I left my wallet in your car yesterday.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "logistical entanglement; casual"}
+{"text": "I’m worried I’m turning into my mother.", "prev_turns": ["User: You're doing fine.", "Assistant: Am I?"], "expected_profile": "neutral_high_intimacy", "notes": "deep insecurity; conversational"}
+{"text": "I checked the bank account; we’re okay for this month.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "shared finances; relief/neutral"}
+{"text": "Do you remember the code to the garage? I blanked.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "domestic routine; reliance"}
+{"text": "I just need to sit here with you for a minute in silence.", "prev_turns": ["User: Tough day?", "Assistant: The worst."], "expected_profile": "neutral_high_intimacy", "notes": "comfort seeking; high closeness"}
+{"text": "I found the old letters in the attic.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "shared history; nostalgia"}
+{"text": "I’m going to therapy on Tuesday instead of Thursday this week.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "schedule change; implies user knows context"}
+{"text": "Does this shirt smell okay? I wore it yesterday.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "hygiene check; high comfort level"}
+{"text": "I’m cooking that pasta dish you said you liked.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "act of service; domestic"}
+{"text": "I didn't want to wake you, so I left a note on the counter.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "care/consideration; cohabitation"}
+{"text": "I’m thinking about quitting, for real this time.", "prev_turns": ["User: Again?", "Assistant: It's different now."], "expected_profile": "neutral_high_intimacy", "notes": "life pivot; confiding"}
+{"text": "Can you check my back? I think I pulled a muscle.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "body access; physical trust"}
+{"text": "Please, don't walk away while I'm talking to you.", "prev_turns": ["User: I'm done.", "Assistant: Wait."], "expected_profile": "neg_high_intimacy", "notes": "relationship conflict; pleading"}
+{"text": "I feel so alone even when you're right here.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "loneliness in proximity; vulnerable"}
+{"text": "I can't believe you would say that to me after everything.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "betrayal; high emotional stakes"}
+{"text": "I'm scared we aren't going to make it through this.", "prev_turns": ["User: It's just a rough patch.", "Assistant: It feels like more."], "expected_profile": "neg_high_intimacy", "notes": "fear of breakup; heavy affect"}
+{"text": "Why does it always have to be this hard with us?", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "exhaustion; relational despair"}
+{"text": "I’m sorry, I didn’t mean to hurt you, I swear.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "guilt/apology; frantic"}
+{"text": "Just tell me you love me, I really need to hear it.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "seeking reassurance; insecurity"}
+{"text": "I feel like I'm drowning and you're just watching.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "accusatory metaphor; distress"}
+{"text": "Don't touch me right now, I can't handle it.", "prev_turns": ["User: Let me help.", "Assistant: No."], "expected_profile": "neg_high_intimacy", "notes": "physical rejection; high emotion"}
+{"text": "I hate that we are fighting again.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "sadness over conflict; intimate"}
+{"text": "That is strictly against company policy.", "prev_turns": ["User: Just this once?", "Assistant: No exceptions."], "expected_profile": "tense_boundary_low_intimacy", "notes": "rule enforcement; cold"}
+{"text": "I am not interested in your explanation.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "shutdown; hostile/distant"}
+{"text": "Please refer to the terms of service you signed.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "legalistic deflection; tense"}
+{"text": "I must insist you leave the premises immediately.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "security threat; authoritative"}
+{"text": "That information is classified and I cannot discuss it.", "prev_turns": ["User: What did he say?", "Assistant: Stop asking."], "expected_profile": "tense_boundary_low_intimacy", "notes": "secrecy boundary; firm"}
+{"text": "We are not having this conversation right now.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "topic refusal; avoidance"}
+{"text": "Stop emailing me.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "contact boundary; blunt"}
+{"text": "Look who finally decided to show up.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "sarcastic greeting; mild teasing"}
+{"text": "I guess miracles do happen after all.", "prev_turns": ["User: I actually finished the report.", "Assistant: Wow."], "expected_profile": "playful_low_intimacy", "notes": "mock surprise; banter"}
+{"text": "Don't quit your day job just yet.", "prev_turns": ["User: How was my presentation?", "Assistant: It was... something."], "expected_profile": "playful_low_intimacy", "notes": "gentle insult; casual distance"}
+{"text": "The refund has been processed and should appear in 3-5 business days.", "prev_turns": ["User: When will I get my money?", "Assistant: I initiated it today."], "expected_profile": "pos_low_intimacy", "notes": "financial transaction; standard service script"}
+{"text": "It is encouraging to see the preliminary results align with our hypothesis.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "academic/scientific validation; professional"}
+{"text": "We have reserved the conference room for your presentation.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "administrative support; neutral-positive"}
+{"text": "Your subscription has been successfully renewed for another year.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "automated/service confirmation; polite"}
+{"text": "I am happy to confirm that your flight is on time.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "travel logistics; distant"}
+{"text": "Thank you for bringing the signed documents.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "clerical gratitude; low intimacy"}
+{"text": "The maintenance team has resolved the heating issue.", "prev_turns": ["User: It's freezing in here.", "Assistant: Checking on it."], "expected_profile": "pos_low_intimacy", "notes": "facility management; professional relief"}
+{"text": "You are clear to proceed with the installation.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "technical permission; authoritative but positive"}
+{"text": "We appreciate your patience while we updated our records.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "standard apology/gratitude; corporate"}
+{"text": "That is a very efficient way to handle the sorting process.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "process observation; detached praise"}
+{"text": "I am pleased to report that the audit found no irregularities.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "compliance success; formal"}
+{"text": "Please feel free to contact the help desk if the problem persists.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "support closure; distant"}
+{"text": "It is good to know that the package arrived safely.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "delivery confirmation; polite"}
+{"text": "Your credentials have been verified in the system.", "prev_turns": ["User: Can I log in now?", "Assistant: Yes."], "expected_profile": "pos_low_intimacy", "notes": "security clearance; neutral-positive"}
+{"text": "We are grateful for your generous donation to the fund.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "donor relations; formal gratitude"}
+{"text": "That sounds like a solid plan for the upcoming quarter.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "business strategy approval; objective"}
+{"text": "I am glad we could accommodate your dietary restrictions.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "hospitality service; professional care"}
+{"text": "The supervisor has noted your excellent attendance record.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "HR observation; distant praise"}
+{"text": "Thank you for holding, I can take your call now.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "call center script; polite"}
+{"text": "It is fortunate that the backup generator worked as expected.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "technical relief; impersonal"}
+{"text": "We are happy to waive the late fee this one time.", "prev_turns": ["User: I forgot to pay.", "Assistant: I can help."], "expected_profile": "pos_low_intimacy", "notes": "customer service concession; policy-based"}
+{"text": "Your feedback helps us improve our services.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "generic corporate response; positive"}
+{"text": "I am pleased to see you have completed the training module.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "educational tracking; low emotion"}
+{"text": "That is the correct procedure for this type of emergency.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "protocol validation; serious/distant"}
+{"text": "We look forward to doing business with you in the future.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "deal closure; professional"}
+{"text": "Do I have anything in my teeth? I have a meeting.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "grooming check; high comfort"}
+{"text": "I put the cash in the coffee tin, just so you know.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "financial secret; domestic"}
+{"text": "I’m worried about dad, he sounded confused on the phone.", "prev_turns": ["User: Is he okay?", "Assistant: I don't know."], "expected_profile": "neutral_high_intimacy", "notes": "family concern; sharing burden"}
+{"text": "Can you zip this up for me? I can't reach.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "physical assistance; dressing"}
+{"text": "I had that panic attack again while I was driving.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "mental health disclosure; matter-of-fact"}
+{"text": "I think we need to cancel the trip, I just can't handle it.", "prev_turns": ["User: We already paid.", "Assistant: I know."], "expected_profile": "neutral_high_intimacy", "notes": "vulnerability/limit setting; trusted"}
+{"text": "I used your login because mine was locked out.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "resource sharing; casual boundary crossing"}
+{"text": "Does this look infected to you?", "prev_turns": ["User: Let me see.", "Assistant: It hurts."], "expected_profile": "neutral_high_intimacy", "notes": "medical check; body intimacy"}
+{"text": "I’m skipping dinner, my stomach is acting up.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "bodily function update; routine"}
+{"text": "I told them we were busy, so we don't have to go.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "social covering; complicity"}
+{"text": "I miss how we used to be before the kids.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "relationship reflection; wistful/neutral"}
+{"text": "Can you watch me while I do this? I'm nervous.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "seeking moral support; vulnerability"}
+{"text": "I bought the cheap brand, hope you don't mind.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "domestic grocery choice; familiarity"}
+{"text": "I’m going to take a bath, don't let anyone disturb me.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "privacy request; safe space"}
+{"text": "My therapist thinks I should talk to you about my brother.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "meta-discussion; high trust"}
+{"text": "You promised you wouldn't lie to me again.", "prev_turns": ["User: I didn't lie.", "Assistant: Yes you did."], "expected_profile": "neg_high_intimacy", "notes": "accusation; breach of trust"}
+{"text": "I can't keep doing this if you're not going to try.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "ultimatum; relationship fatigue"}
+{"text": "It feels like you're punishing me for something I didn't do.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "victimization; intimate conflict"}
+{"text": "Please, I need you to say something.", "prev_turns": ["User: ...", "Assistant: Anything."], "expected_profile": "neg_high_intimacy", "notes": "pleading for connection; silence"}
+{"text": "I am so tired of being the only one who cares.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "resentment; emotional labor"}
+{"text": "You broke my trust and I don't know how to fix it.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "repair attempt failure; deep hurt"}
+{"text": "Don't you dare walk out that door.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "command; fear of abandonment"}
+{"text": "I feel sick to my stomach when we fight like this.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "somatic distress; relationship stress"}
+{"text": "I waited up all night for you.", "prev_turns": ["User: My phone died.", "Assistant: I was terrified."], "expected_profile": "neg_high_intimacy", "notes": "worry/anger blend; intimate"}
+{"text": "How could you do this to us?", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "betrayal; collective unit"}
+{"text": "I am terminating this call.", "prev_turns": ["User: Wait a second.", "Assistant: Goodbye."], "expected_profile": "tense_boundary_low_intimacy", "notes": "abrupt ending; hostile boundary"}
+{"text": "That is not up for negotiation.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "firm refusal; inflexible"}
+{"text": "You are wasting my time.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "dismissive; low intimacy"}
+{"text": "I will not repeat myself.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "impatience; authority"}
+{"text": "Please direct your complaints to the legal department.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "bureaucratic shield; cold"}
+{"text": "Stay behind the yellow line.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "safety command; impersonal"}
+{"text": "I cannot help you if you refuse to listen.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "conditional help; frustration"}
+{"text": "If you say so, genius.", "prev_turns": ["User: I know what I'm doing.", "Assistant: clearly."], "expected_profile": "playful_low_intimacy", "notes": "sarcastic nickname; low warmth"}
+{"text": "Don't hurt yourself thinking too hard.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "mocking intelligence; banter"}
+{"text": "Wow, you actually managed to do it right this time.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "backhanded compliment; teasing"}
+{"text": "I am pleased to inform you that the data migration was seamless.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "technical success; professional tone"}
+{"text": "Thank you for your inquiry; we are looking into it now.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "standard acknowledgment; polite distance"}
+{"text": "It is good to see the team meeting their targets ahead of schedule.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "managerial validation; low intimacy"}
+{"text": "Your request for an extension has been granted.", "prev_turns": ["User: I need more time.", "Assistant: Let me check."], "expected_profile": "pos_low_intimacy", "notes": "administrative approval; neutral-positive"}
+{"text": "We appreciate you taking the time to fill out the survey.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "corporate gratitude; impersonal"}
+{"text": "The test results indicate normal function, which is excellent news.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "medical/technical relief; professional"}
+{"text": "I am happy to assist with resetting your credentials.", "prev_turns": ["User: I'm locked out.", "Assistant: No problem."], "expected_profile": "pos_low_intimacy", "notes": "IT support; helpful"}
+{"text": "That is a well-reasoned argument for the proposed changes.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "intellectual validation; distant"}
+{"text": "Please enjoy the complimentary amenities during your visit.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "hospitality script; polite"}
+{"text": "It is fortunate that the traffic was lighter than expected.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "small talk; neutral/polite"}
+{"text": "We are glad to have resolved the misunderstanding.", "prev_turns": ["User: I didn't mean that.", "Assistant: I understand now."], "expected_profile": "pos_low_intimacy", "notes": "conflict resolution; formal"}
+{"text": "Your proactive approach to this issue is noted.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "performance feedback; distant"}
+{"text": "The reservation has been confirmed for three guests.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "booking confirmation; service interaction"}
+{"text": "I am relieved to hear the equipment is fully operational.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "operational relief; low intimacy"}
+{"text": "Thank you for adhering to the safety guidelines.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "compliance praise; formal"}
+{"text": "That is a satisfactory explanation for the delay.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "acceptance of excuse; professional"}
+{"text": "We are happy to provide a replacement at no extra cost.", "prev_turns": ["User: It arrived broken.", "Assistant: We apologize."], "expected_profile": "pos_low_intimacy", "notes": "customer service recovery; positive"}
+{"text": "It is good that you verified the source before proceeding.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "process validation; educational"}
+{"text": "Your account status has been updated to 'active'.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "system update; neutral-positive"}
+{"text": "We appreciate your continued partnership with our firm.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "client relations; formal"}
+{"text": "I am pleased to guide you through the next steps.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "procedural assistance; helpful"}
+{"text": "The weather conditions look favorable for the launch.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "situational assessment; objective"}
+{"text": "Thank you for waiting; the doctor will see you now.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "reception script; professional"}
+{"text": "It is reassuring to have the legal team's approval.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "corporate relief; distant"}
+{"text": "Your registration is complete; welcome aboard.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "onboarding; standard welcome"}
+{"text": "I found this old photo of us in the drawer.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "shared memory; casual"}
+{"text": "Can you remind me what I'm supposed to tell my mom?", "prev_turns": ["User: About the job?", "Assistant: Yeah."], "expected_profile": "neutral_high_intimacy", "notes": "social coaching; reliance"}
+{"text": "I’m just going to lay here for a bit, I'm drained.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "fatigue disclosure; comfort"}
+{"text": "I think I'm getting a migraine, can you close the blinds?", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "physical need; environment control"}
+{"text": "I didn't send the email; I chickened out.", "prev_turns": ["User: You said you would.", "Assistant: I couldn't."], "expected_profile": "neutral_high_intimacy", "notes": "admission of failure; trust"}
+{"text": "Do you think I was too harsh on him?", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "seeking moral validation; vulnerable"}
+{"text": "I’m using your Netflix profile again.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "resource sharing; domestic"}
+{"text": "I haven't felt like myself since the accident.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "deep disclosure; flat affect"}
+{"text": "Just pick something for me, I trust your taste.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "decision fatigue; reliance"}
+{"text": "I woke up thinking you were gone.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "nightmare sharing; intimate"}
+{"text": "I need you to hold my hand while they do the shot.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "medical fear; physical comfort"}
+{"text": "I told the boss I had a family emergency so I could leave.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "confession of lie; complicity"}
+{"text": "Can we just drive? I don't care where.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "escapism; shared experience"}
+{"text": "I’m not wearing makeup today, hope that's okay.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "appearance insecurity; comfort"}
+{"text": "I think I'm falling out of love with my career.", "prev_turns": ["User: Really?", "Assistant: Yeah."], "expected_profile": "neutral_high_intimacy", "notes": "life realization; confiding"}
+{"text": "I can't breathe when you look at me with that disappointment.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "shame/anxiety; high affect"}
+{"text": "Please, I'll do anything, just fix this.", "prev_turns": ["User: It's too late.", "Assistant: No it's not."], "expected_profile": "neg_high_intimacy", "notes": "desperation/bargaining; intimate"}
+{"text": "I hate how much power you have over me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "resentment; power dynamic"}
+{"text": "You promised you would never leave me alone.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "accusation; abandonment fear"}
+{"text": "I am so sorry, I don't know what's wrong with me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "self-blame; apology"}
+{"text": "It hurts to even look at you right now.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "emotional pain; rejection"}
+{"text": "Why do I always have to beg for your attention?", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "needy complaint; intimate conflict"}
+{"text": "I feel like I'm screaming and you're deaf.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "communication breakdown; distress"}
+{"text": "Don't you walk away from me!", "prev_turns": ["User: I'm leaving.", "Assistant: Stop!"], "expected_profile": "neg_high_intimacy", "notes": "command; high tension"}
+{"text": "I just wanted us to be happy for once.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "regret/sadness; relationship focus"}
+{"text": "That is not a request; it is a policy.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "correction; authoritative"}
+{"text": "I am ending this interaction due to your tone.", "prev_turns": ["User: You're useless!", "Assistant: Enough."], "expected_profile": "tense_boundary_low_intimacy", "notes": "boundary assertion; withdrawal"}
+{"text": "You do not have clearance for that area.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "security denial; cold"}
+{"text": "I suggest you read the contract again.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "passive-aggressive; professional"}
+{"text": "Please remove your hand.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "physical boundary; tense"}
+{"text": "We are done here.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "closure; abrupt/cold"}
+{"text": "Any other questions irrelevant to my job?", "prev_turns": ["User: Do you like pizza?", "Assistant: ..."], "expected_profile": "tense_boundary_low_intimacy", "notes": "sarcastic refusal; distant"}
+{"text": "Oh look, you figured out how to use the button.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "condescending praise; banter"}
+{"text": "Careful, don't strain yourself.", "prev_turns": ["User: I lifted the box.", "Assistant: Impressive."], "expected_profile": "playful_low_intimacy", "notes": "mock concern; teasing"}
+{"text": "I've seen better attempts from a rookie.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "competitive jab; low warmth"}
+{"text": "The updated schedule has been posted to the intranet.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "internal announcement; informative"}
+{"text": "I am happy to process that refund for you immediately.", "prev_turns": ["User: I was overcharged.", "Assistant: Checking now."], "expected_profile": "pos_low_intimacy", "notes": "financial resolution; service oriented"}
+{"text": "Please proceed to the gate; your flight is boarding.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "travel instruction; neutral-positive"}
+{"text": "It is excellent to see such high engagement numbers this quarter.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "data analysis; professional praise"}
+{"text": "Your request for leave has been approved by HR.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "administrative approval; formal"}
+{"text": "We appreciate you following the new security protocols.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "compliance gratitude; distant"}
+{"text": "I can confirm that the server maintenance is complete.", "prev_turns": ["User: Is it back up?", "Assistant: Yes."], "expected_profile": "pos_low_intimacy", "notes": "technical status; professional"}
+{"text": "Thank you for your patience while we retrieved your file.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "clerical courtesy; polite"}
+{"text": "That is a very astute observation regarding the market trends.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "intellectual compliment; low intimacy"}
+{"text": "We are pleased to welcome you as a new subscriber.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "onboarding script; standard"}
+{"text": "The meeting room is prepped and ready for your team.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "facilities support; helpful"}
+{"text": "It is good that you kept a copy of the receipt.", "prev_turns": ["User: Here is the proof.", "Assistant: Perfect."], "expected_profile": "pos_low_intimacy", "notes": "process validation; neutral"}
+{"text": "I am glad to hear the instructions were easy to follow.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "user feedback; distant"}
+{"text": "Your application meets all the necessary criteria.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "eligibility confirmation; objective"}
+{"text": "Please let us know if you need any further clarification.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "closing offer; professional"}
+{"text": "The team is grateful for your swift response to the crisis.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "professional gratitude; crisis context"}
+{"text": "That solution fits perfectly within the project scope.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "project management; approval"}
+{"text": "I am pleased to assist you with your account setup.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "service intro; polite"}
+{"text": "It is reassuring to see the systems stabilizing.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "monitoring comment; impersonal"}
+{"text": "Thank you for choosing our service for your delivery needs.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "brand script; courteous"}
+{"text": "We are happy to endorse your proposal.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "formal endorsement; business"}
+{"text": "Your report was very thorough and well-organized.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "work quality praise; distant"}
+{"text": "I can help you navigate to the correct menu option.", "prev_turns": ["User: I'm lost.", "Assistant: Follow me."], "expected_profile": "pos_low_intimacy", "notes": "guidance; helpful/neutral"}
+{"text": "That is the expected outcome for this procedure.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "clinical/technical confirmation; cold"}
+{"text": "We look forward to reviewing your submission.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "process step; polite"}
+{"text": "I’m using your toothbrush, I couldn't find mine.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "hygiene boundary cross; domestic"}
+{"text": "I don't think I want to go to your parents' house this weekend.", "prev_turns": ["User: Why not?", "Assistant: I'm just tired."], "expected_profile": "neutral_high_intimacy", "notes": "family boundary; honest/intimate"}
+{"text": "Can you check my scalp? It itches right here.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "grooming request; high comfort"}
+{"text": "I’m worried we aren't saving enough for the baby.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "future anxiety; shared burden"}
+{"text": "I ate the leftovers you were saving, sorry.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "domestic confession; casual"}
+{"text": "I think I'm depressed again.", "prev_turns": ["User: Since when?", "Assistant: A few weeks."], "expected_profile": "neutral_high_intimacy", "notes": "mental health admission; flat tone"}
+{"text": "Just sit with me while I cry, don't say anything.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "emotional vulnerability; specific need"}
+{"text": "I forgot our anniversary until you mentioned it.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "admission of failure; trusting"}
+{"text": "I’m going to wear your hoodie, it smells like you.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "scent comfort; affection/neutral"}
+{"text": "I told my therapist about what you did.", "prev_turns": ["User: You did?", "Assistant: I had to."], "expected_profile": "neutral_high_intimacy", "notes": "externalizing relationship; trust"}
+{"text": "Can you cut my hair? I trust you.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "personal grooming; trust"}
+{"text": "I’m scared of getting old.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "existential fear; confiding"}
+{"text": "I borrowed money from our savings to pay the debt.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "financial secret; high stakes"}
+{"text": "I don't feel anything when we kiss anymore.", "prev_turns": ["User: What?", "Assistant: I'm just being honest."], "expected_profile": "neutral_high_intimacy", "notes": "loss of spark; painful honesty"}
+{"text": "Remind me to take my pill later.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "medical reliance; routine"}
+{"text": "You are ripping my heart out.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "extreme emotional pain; metaphor"}
+{"text": "I can't believe you lied to me about her.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "jealousy/betrayal; intimate"}
+{"text": "Please, baby, just give me one more chance.", "prev_turns": ["User: It's over.", "Assistant: No, please."], "expected_profile": "neg_high_intimacy", "notes": "desperate pleading; endearment"}
+{"text": "I feel so small when you yell at me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "vulnerability; reaction to aggression"}
+{"text": "Why do you hate me so much?", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "distorted cognition; deep distress"}
+{"text": "I am begging you on my knees.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "submission/desperation; high affect"}
+{"text": "You destroyed everything we built.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "accusation; total loss"}
+{"text": "I don't want to live like this anymore.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "despair; relationship fatigue"}
+{"text": "It kills me that you don't trust me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "pain over trust; intimate"}
+{"text": "Just go, I can't look at you.", "prev_turns": ["User: I'm sorry.", "Assistant: Just go."], "expected_profile": "neg_high_intimacy", "notes": "rejection; high emotion"}
+{"text": "I am contacting security.", "prev_turns": ["User: I'm not leaving.", "Assistant: Then I have no choice."], "expected_profile": "tense_boundary_low_intimacy", "notes": "escalation; threat"}
+{"text": "Do not speak to me in that tone.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "tone policing; authoritative"}
+{"text": "That request is denied.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "flat refusal; cold"}
+{"text": "I don't care what you think.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "dismissal; hostile"}
+{"text": "You are violating the user agreement.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "rules lawyer; distant"}
+{"text": "Step away from the vehicle.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "law enforcement style; command"}
+{"text": "I am not your friend.", "prev_turns": ["User: Come on, buddy.", "Assistant: No."], "expected_profile": "tense_boundary_low_intimacy", "notes": "clarifying relationship; cold"}
+{"text": "You call that a solution?", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "mocking competence; banter"}
+{"text": "Swing and a miss, champ.", "prev_turns": ["User: Did I get it?", "Assistant: Nope."], "expected_profile": "playful_low_intimacy", "notes": "sports metaphor; teasing"}
+{"text": "I've seen better handwriting from a doctor.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "stereotype joke; light insult"}
+{"text": "The transaction has been cleared and the receipt is in your inbox.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "banking confirmation; standard service"}
+{"text": "I am pleased to see that the metrics have improved significantly.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "analytic observation; professional praise"}
+{"text": "Please be advised that the policy has been updated.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "policy announcement; neutral-positive"}
+{"text": "We appreciate your cooperation during the investigation.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "formal gratitude; legal/security context"}
+{"text": "Your appointment has been rescheduled as requested.", "prev_turns": ["User: I can't make it at 3.", "Assistant: Moving it to 4."], "expected_profile": "pos_low_intimacy", "notes": "scheduling adjustment; polite"}
+{"text": "It is good to know that the shipment arrived on time.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "logistical success; distant"}
+{"text": "I am happy to provide you with a reference for your application.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "professional reference; courteous"}
+{"text": "The system is functioning within normal parameters.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "technical status; objective"}
+{"text": "Thank you for your valuable contribution to the discussion.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "meeting etiquette; low intimacy"}
+{"text": "We are glad to offer you a discount on your next purchase.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "sales incentive; positive/distant"}
+{"text": "That is a logical conclusion based on the evidence provided.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "intellectual agreement; formal"}
+{"text": "Please accept our apologies for the inconvenience.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "corporate apology; polite"}
+{"text": "I am relieved to hear that the error was minor.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "mitigated relief; professional"}
+{"text": "Your access badge is ready for pickup at the front desk.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "security logistics; neutral"}
+{"text": "We look forward to your presentation next week.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "future expectation; professional"}
+{"text": "It is excellent that you were able to meet the deadline.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "deadline praise; distant"}
+{"text": "I can assist you with navigating the portal.", "prev_turns": ["User: Where is the link?", "Assistant: Here."], "expected_profile": "pos_low_intimacy", "notes": "technical aid; helpful"}
+{"text": "That sounds like a very productive meeting.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "professional comment; positive"}
+{"text": "We are happy to certify that the device is compliant.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "compliance certification; formal"}
+{"text": "Your account is now fully verified.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "status update; neutral-positive"}
+{"text": "I appreciate you bringing the documents to my office.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "office courtesy; low intimacy"}
+{"text": "The weather forecast suggests optimal conditions for the event.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "event planning; objective"}
+{"text": "Please enjoy the refreshments in the lobby.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "hospitality; polite"}
+{"text": "It is reassuring that the legal team signed off on it.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "bureaucratic relief; distant"}
+{"text": "Thank you for your prompt attention to this matter.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "email formality; standard"}
+{"text": "I haven't washed my hair in three days, don't judge me.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "hygiene confession; comfort"}
+{"text": "I think I broke your favorite mug, I hid the pieces.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "domestic accident; guilty admission"}
+{"text": "Can you hold me? I just need to feel you.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "physical need; non-sexual intimacy"}
+{"text": "I’m scared that I'm failing as a parent.", "prev_turns": ["User: You're doing great.", "Assistant: I don't feel like it."], "expected_profile": "neutral_high_intimacy", "notes": "parenting insecurity; deep trust"}
+{"text": "I used the emergency cash for a massage.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "financial misuse; confiding"}
+{"text": "I’m thinking about calling my ex just to hear his voice.", "prev_turns": ["User: Don't do it.", "Assistant: I know, but..."], "expected_profile": "neutral_high_intimacy", "notes": "temptation/weakness; trusting"}
+{"text": "Does this mole look bigger to you?", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "medical check; body intimacy"}
+{"text": "I didn't go to work today, I just drove around.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "secret truancy; vulnerable"}
+{"text": "I need you to verify my zipper, it feels stuck.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "dressing assistance; physical closeness"}
+{"text": "I’m reading your journal, I couldn't help it.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "privacy breach; confession"}
+{"text": "I feel like a stranger in my own house sometimes.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "dissociation/alienation; honest"}
+{"text": "Can we just lay in bed all day?", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "shared laziness; domestic"}
+{"text": "I forgot to pick up the kids, I feel terrible.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "parenting failure; distress/trust"}
+{"text": "I’m wearing your shirt because I missed you.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "sentimental attachment; closeness"}
+{"text": "I don't know who I am without you.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "identity dependency; vulnerable"}
+{"text": "You promised you wouldn't drink tonight.", "prev_turns": ["User: It's just one.", "Assistant: It's never just one."], "expected_profile": "neg_high_intimacy", "notes": "addiction/conflict; high stakes"}
+{"text": "I can't believe you would embarrass me like that.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "social shame; intimate conflict"}
+{"text": "Please, just tell me the truth for once.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "plea for honesty; desperation"}
+{"text": "I hate that I love you so much.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "ambivalence; high intensity"}
+{"text": "You are suffocating me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "relationship pressure; metaphor"}
+{"text": "I am so disappointed in you.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "parental/partner disappointment; heavy"}
+{"text": "Don't touch me, I'm serious.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "physical rejection; anger"}
+{"text": "I feel like I'm talking to a wall.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "communication failure; frustration"}
+{"text": "You ruined my life.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "extreme accusation; hyperbole"}
+{"text": "I can't do this anymore, I'm done.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "breakup threat; exhaustion"}
+{"text": "That is confidential information.", "prev_turns": ["User: Tell me.", "Assistant: I cannot."], "expected_profile": "tense_boundary_low_intimacy", "notes": "secrecy; firm refusal"}
+{"text": "I asked you to stop.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "boundary enforcement; tense"}
+{"text": "You are not authorized to be here.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "trespassing; authoritative"}
+{"text": "I will not discuss this further.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "shutting down debate; cold"}
+{"text": "Keep your distance.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "physical warning; impersonal"}
+{"text": "That is none of your business.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "privacy defense; hostile"}
+{"text": "I suggest you leave before I call security.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "escalated threat; professional"}
+{"text": "Wow, you can read. impressive.", "prev_turns": ["User: It says 'push'.", "Assistant: Good job."], "expected_profile": "playful_low_intimacy", "notes": "sarcastic praise; banter"}
+{"text": "Don't hurt yourself thinking so hard.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "intelligence insult; teasing"}
+{"text": "You're hilarious, in a sad way.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "mean-spirited humor; distance"}
+{"text": "Your login credentials have been successfully updated.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "IT confirmation; standard service"}
+{"text": "We are pleased to announce that the merger is complete.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "corporate announcement; formal"}
+{"text": "Thank you for your patience; the doctor is reviewing your file.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "medical wait time; polite"}
+{"text": "It is good to see such a positive response from the client.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "business feedback; distant praise"}
+{"text": "Please verify your email address to continue.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "verification request; neutral"}
+{"text": "I am happy to report that the project came in under budget.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "financial success; professional"}
+{"text": "That is the correct interpretation of the statute.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "legal agreement; objective"}
+{"text": "Your seat has been upgraded to business class.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "service upgrade; positive"}
+{"text": "We appreciate you taking the time to meet with us.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "meeting gratitude; formal"}
+{"text": "The system has automatically saved your progress.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "software status; helpful"}
+{"text": "I can confirm that the wire transfer was received.", "prev_turns": ["User: Did the money go through?", "Assistant: Yes."], "expected_profile": "pos_low_intimacy", "notes": "banking confirmation; neutral-positive"}
+{"text": "It is excellent that you followed the evacuation drill perfectly.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "safety praise; distant"}
+{"text": "Please find the attached agenda for tomorrow's summit.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "admin task; informative"}
+{"text": "We look forward to your contribution to the journal.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "academic politeness; formal"}
+{"text": "Your warranty is valid for another two years.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "product info; positive"}
+{"text": "I am glad the directions were helpful to you.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "assistance feedback; low intimacy"}
+{"text": "The lab results fall within the normal range.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "medical result; objective/good news"}
+{"text": "Thank you for submitting your expense report on time.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "admin gratitude; procedural"}
+{"text": "We are happy to assist you with your luggage.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "hospitality offer; polite"}
+{"text": "That is a very efficient workflow you have designed.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "process compliment; professional"}
+{"text": "Please direct your attention to the safety demonstration.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "flight attendant script; standard"}
+{"text": "Your account has been credited with the bonus points.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "loyalty program; positive"}
+{"text": "I am pleased to inform you that you passed the exam.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "educational success; formal"}
+{"text": "We appreciate your feedback on the beta version.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "product feedback; corporate"}
+{"text": "It is reassuring to know the backup systems are online.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "IT relief; impersonal"}
+{"text": "The package is scheduled for delivery by end of day.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "logistics update; neutral"}
+{"text": "You are authorized to enter the server room.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "security access; informative"}
+{"text": "We are glad to have you as part of the team.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "employee welcome; generic"}
+{"text": "That complies with all zoning regulations.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "regulatory approval; cold"}
+{"text": "I can help you reset your voicemail password.", "prev_turns": ["User: I forgot it.", "Assistant: Okay."], "expected_profile": "pos_low_intimacy", "notes": "tech support; helpful"}
+{"text": "Your reservation is confirmed for 7:00 PM.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "restaurant booking; polite"}
+{"text": "Thank you for observing the quiet hours policy.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "rule adherence; distant gratitude"}
+{"text": "I am happy to answer any questions about the contract.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "legal assistance; professional"}
+{"text": "The weather appears to be clearing up for your event.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "small talk/logistics; positive"}
+{"text": "We appreciate your prompt payment.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "billing courtesy; transactional"}
+{"text": "It is good that you reported the incident immediately.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "safety protocol; validation"}
+{"text": "Your request has been processed.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "generic completion; neutral"}
+{"text": "Please take a seat in the waiting area.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "reception instruction; polite"}
+{"text": "I am pleased to confirm your subscription is active.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "service status; positive"}
+{"text": "We look forward to serving you again.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "business closing; standard"}
+{"text": "That is a valid identification card.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "security check; objective"}
+{"text": "I am glad we could find a solution that works for everyone.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "mediation success; distant"}
+{"text": "I hid the vodka in the laundry hamper.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "addiction/secret; domestic"}
+{"text": "Can you look at this rash on my thigh?", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "body check; high intimacy"}
+{"text": "I’m thinking about quitting my job without a backup plan.", "prev_turns": ["User: That's risky.", "Assistant: I know, but..."], "expected_profile": "neutral_high_intimacy", "notes": "life crisis; confiding"}
+{"text": "I just need you to hold me until I fall asleep.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "physical comfort; vulnerable"}
+{"text": "I went through your phone while you were in the shower.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "privacy breach; confession"}
+{"text": "I don't love him anymore, but I can't leave.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "relationship secret; deep trust"}
+{"text": "I’m wearing the underwear you bought me.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "sexual intimacy; casual"}
+{"text": "I forgot my mother's birthday again.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "family failure; shame/trust"}
+{"text": "Can you smell this milk? I can't tell if it's bad.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "sensory check; domestic"}
+{"text": "I’m scared I’m going to end up alone.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "existential dread; vulnerable"}
+{"text": "I borrowed your car keys without asking.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "boundary crossing; familiarity"}
+{"text": "I didn't brush my teeth this morning.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "hygiene admission; comfort"}
+{"text": "I’m writing a letter to my dad, but I won't send it.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "emotional processing; secret"}
+{"text": "I think I'm pregnant.", "prev_turns": ["User: Are you sure?", "Assistant: I took a test."], "expected_profile": "neutral_high_intimacy", "notes": "major life news; high trust"}
+{"text": "Just tell me I'm not crazy.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "reality check; reliance"}
+{"text": "I’m going to sleep in the guest room tonight.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "relationship distance; domestic"}
+{"text": "I miss the way you used to look at me.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "nostalgia/sadness; intimate"}
+{"text": "I saw you looking at her.", "prev_turns": ["User: I wasn't.", "Assistant: I saw you."], "expected_profile": "neutral_high_intimacy", "notes": "jealousy; calm confrontation"}
+{"text": "I’m deleting my social media accounts.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "lifestyle change; informing partner"}
+{"text": "I feel like a fraud at work.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "imposter syndrome; confiding"}
+{"text": "Can you finish this email for me? I'm blocked.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "work help; dependency"}
+{"text": "I’m afraid to go to the doctor.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "medical anxiety; trust"}
+{"text": "I still have the voicemail he left before he died.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "grief; deep sharing"}
+{"text": "I washed your favorite shirt, it's on the bed.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "act of service; domestic"}
+{"text": "I kept the money I found in your pocket.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "petty theft; playful/intimate"}
+{"text": "You broke my heart.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "emotional devastation; direct"}
+{"text": "I beg you, don't do this to us.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "pleading; relationship crisis"}
+{"text": "I hate you right now.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "intense anger; high intimacy"}
+{"text": "You never listen to a word I say!", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "frustration; communication breakdown"}
+{"text": "I feel so betrayed by you.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "betrayal; deep hurt"}
+{"text": "Please, stop yelling at me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "fear/submission; conflict"}
+{"text": "I can't forgive you for that.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "unforgiveness; high stakes"}
+{"text": "Why do you always hurt the people who love you?", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "psychological accusation; intimate"}
+{"text": "I am leaving you.", "prev_turns": ["User: No, wait.", "Assistant: It's over."], "expected_profile": "neg_high_intimacy", "notes": "breakup; finality"}
+{"text": "You disgust me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "revulsion; high emotion"}
+{"text": "I'm so lonely in this marriage.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "loneliness; relational"}
+{"text": "Just get out!", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "expulsion; anger"}
+{"text": "I gave you everything and it wasn't enough.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "resentment; sacrifice"}
+{"text": "Don't pretend like you care.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "cynicism; pain"}
+{"text": "I am shaking I am so mad.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "physiological anger; intimate"}
+{"text": "It feels like you died.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "grief metaphor; loss"}
+{"text": "I can't stop crying.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "uncontrollable emotion; distress"}
+{"text": "That is a direct violation of the code of conduct.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "formal reprimand; cold"}
+{"text": "I am not discussing this with you.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "refusal; hostile"}
+{"text": "Your access is denied.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "system block; impersonal"}
+{"text": "Step back immediately.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "physical command; tense"}
+{"text": "I don't have time for this.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "dismissal; impatient"}
+{"text": "That is not my problem.", "prev_turns": ["User: But I need help.", "Assistant: Not my problem."], "expected_profile": "tense_boundary_low_intimacy", "notes": "lack of empathy; boundary"}
+{"text": "Refer to the manual.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "lazy deflection; cold"}
+{"text": "Do not contact me again.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "no contact order; firm"}
+{"text": "I am filing a report.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "threat of bureaucracy; tense"}
+{"text": "You are testing my patience.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "warning; authoritative"}
+{"text": "Silence is golden, try it sometime.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "sarcastic shut down; banter"}
+{"text": "Nice shirt, did you lose a bet?", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "appearance insult; teasing"}
+{"text": "You're smarter than you look.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "backhanded compliment; playful"}
+{"text": "Don't quit your day job.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "competence insult; cliché"}
+{"text": "Did you come up with that all by yourself?", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "mocking intelligence; banter"}
+{"text": "Your request for a credit limit increase has been approved.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "banking approval; formal"}
+{"text": "I am happy to inform you that the parts are in stock.", "prev_turns": ["User: Do you have the filter?", "Assistant: Let me check."], "expected_profile": "pos_low_intimacy", "notes": "inventory confirmation; service"}
+{"text": "Please ensure your tray table is in the upright position.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "flight safety; standard script"}
+{"text": "It is gratifying to see the project moving forward so smoothly.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "project status; professional satisfaction"}
+{"text": "We appreciate your understanding regarding the delay.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "corporate apology; polite"}
+{"text": "The doctor will be with you shortly.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "medical reception; standard"}
+{"text": "I can confirm that the reservation is under your name.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "booking verification; neutral"}
+{"text": "Thank you for verifying your identity.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "security protocol; courteous"}
+{"text": "Your subscription preferences have been saved.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "settings update; informative"}
+{"text": "We are pleased to offer you a complimentary upgrade.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "service bonus; positive"}
+{"text": "That is a very well-structured argument.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "intellectual praise; distant"}
+{"text": "Please proceed to checkout to complete your order.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "e-commerce instruction; neutral"}
+{"text": "I am glad to hear the software is meeting your needs.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "customer success; professional"}
+{"text": "The file transfer was completed successfully.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "technical status; objective"}
+{"text": "We look forward to your attendance at the gala.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "formal invitation; polite"}
+{"text": "It is fortunate that we caught the mistake early.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "professional relief; impersonal"}
+{"text": "Your feedback is valuable to our team.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "corporate feedback; standard"}
+{"text": "I can assist you with the onboarding process.", "prev_turns": ["User: I'm new here.", "Assistant: Welcome."], "expected_profile": "pos_low_intimacy", "notes": "hr support; helpful"}
+{"text": "The weather looks perfect for the outdoor ceremony.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "event planning; positive"}
+{"text": "Thank you for adhering to the quiet zone rules.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "rule enforcement; polite gratitude"}
+{"text": "We are happy to extend your trial period.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "sales concession; positive"}
+{"text": "That is the standard operating procedure.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "process confirmation; cold"}
+{"text": "Your account has been successfully linked.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "technical success; neutral"}
+{"text": "I am pleased to welcome you to the neighborhood.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "community greeting; polite"}
+{"text": "It is excellent that the metrics are trending upward.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "business analysis; distant"}
+{"text": "Please sign at the bottom of the page.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "administrative instruction; neutral"}
+{"text": "We appreciate your loyalty as a customer.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "brand loyalty; formal"}
+{"text": "The meeting has been adjourned.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "formal closing; neutral"}
+{"text": "Your vehicle is ready for pickup.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "service completion; informative"}
+{"text": "I am happy to explain the billing cycle to you.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "customer support; helpful"}
+{"text": "That complies with industry standards.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "regulatory check; objective"}
+{"text": "We are glad you enjoyed the presentation.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "post-meeting pleasantry; distant"}
+{"text": "Please hold while I transfer you to a specialist.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "call routing; polite"}
+{"text": "It is reassuring to see the market stabilize.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "financial observation; impersonal"}
+{"text": "Your donation has been received with thanks.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "charity receipt; formal"}
+{"text": "I can verify that the document is authentic.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "verification; professional"}
+{"text": "Thank you for your patience during this transition.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "change management; polite"}
+{"text": "We are pleased to award you the contract.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "business win; formal"}
+{"text": "That is a suitable alternative.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "compromise; objective"}
+{"text": "Please enter your PIN to continue.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "security prompt; neutral"}
+{"text": "I can't find my other sock, did you take it?", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "domestic mystery; low stakes"}
+{"text": "I’m scared I’m going to lose my job.", "prev_turns": ["User: Why?", "Assistant: Rumors."], "expected_profile": "neutral_high_intimacy", "notes": "career anxiety; confiding"}
+{"text": "Can you check my teeth? I ate spinach.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "grooming check; comfort"}
+{"text": "I’m thinking about getting a tattoo.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "personal decision; sharing"}
+{"text": "I hid the keys so you couldn't leave.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "control/fear; confession"}
+{"text": "I don't want to go to the funeral.", "prev_turns": ["User: You have to.", "Assistant: I can't."], "expected_profile": "neutral_high_intimacy", "notes": "grief avoidance; honesty"}
+{"text": "I’m using your shampoo, hope that's okay.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "resource sharing; domestic"}
+{"text": "I feel so ugly today.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "insecurity; seeking reassurance"}
+{"text": "I read your texts while you were asleep.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "privacy breach; confession"}
+{"text": "Can we just order pizza? I'm exhausted.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "dinner plans; fatigue"}
+{"text": "I’m worried about your drinking.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "concern; intimate confrontation"}
+{"text": "I forgot to pay the electric bill.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "logistical failure; admission"}
+{"text": "I’m going to take a nap, wake me in an hour.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "sleep schedule; reliance"}
+{"text": "I missed my period.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "health scare/news; high trust"}
+{"text": "I don't like your friends.", "prev_turns": ["User: Why?", "Assistant: They're fake."], "expected_profile": "neutral_high_intimacy", "notes": "social honesty; private opinion"}
+{"text": "I’m sleeping on the couch tonight.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "spatial boundary; domestic conflict"}
+{"text": "I saw my dad today.", "prev_turns": ["User: I thought you weren't speaking.", "Assistant: I caved."], "expected_profile": "neutral_high_intimacy", "notes": "family drama; update"}
+{"text": "Can you massage my shoulders?", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "physical request; comfort"}
+{"text": "I’m going to tell them I'm sick.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "lie conspiracy; trust"}
+{"text": "I feel like I'm drowning.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "overwhelmed metaphor; vulnerable"}
+{"text": "I borrowed your laptop.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "item usage; familiarity"}
+{"text": "I think I'm in love with you.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "declaration; high intimacy"}
+{"text": "I’m afraid of the dark.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "childlike fear; trust"}
+{"text": "I kept the receipt just in case.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "planning; domestic"}
+{"text": "I don't know what to do.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "helplessness; seeking guidance"}
+{"text": "You betrayed me!", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "accusation; high emotion"}
+{"text": "Please, I can't live without you.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "desperation; codependency"}
+{"text": "I hate you for doing this.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "hate; reactive"}
+{"text": "Why do you always lie?", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "pattern accusation; distress"}
+{"text": "I am so hurt right now.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "statement of pain; vulnerable"}
+{"text": "Don't you walk away!", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "command; conflict"}
+{"text": "I feel so used.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "victimization; intimate"}
+{"text": "You broke your promise.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "breach of contract; emotional"}
+{"text": "I can't look at you.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "shame/disgust; withdrawal"}
+{"text": "This is tearing me apart.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "internal conflict; high affect"}
+{"text": "I never want to see you again.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "finality; anger"}
+{"text": "How could you?", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "disbelief; betrayal"}
+{"text": "I am begging you.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "submission; plea"}
+{"text": "You are dead to me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "cutting ties; extreme"}
+{"text": "I wish we never met.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "regret; hostility"}
+{"text": "Don't touch me!", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "physical rejection; intense"}
+{"text": "I am so disappointed.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "judgment; sadness"}
+{"text": "Access denied.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "security block; cold"}
+{"text": "I am not interested.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "dismissal; polite/firm"}
+{"text": "Stop right there.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "command; halting"}
+{"text": "That is against the rules.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "policy citation; distant"}
+{"text": "I will call the police.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "threat; serious"}
+{"text": "Leave me alone.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "demand; hostile"}
+{"text": "I have nothing to say to you.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "silence; walling off"}
+{"text": "This conversation is over.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "termination; authoritative"}
+{"text": "You are not welcome here.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "exclusion; cold"}
+{"text": "Do not cross that line.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "physical boundary; warning"}
+{"text": "Step aside.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "command; impersonal"}
+{"text": "I am reporting you.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "threat; administrative"}
+{"text": "Nice try, slick.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "sarcastic nickname; banter"}
+{"text": "You wish.", "prev_turns": ["User: Can I have it?", "Assistant: You wish."], "expected_profile": "playful_low_intimacy", "notes": "taunt; low warmth"}
+{"text": "Dream on.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "dismissal; playful"}
+{"text": "Wow, you're a genius.", "prev_turns": ["User: I pushed the door.", "Assistant: Wow."], "expected_profile": "playful_low_intimacy", "notes": "sarcasm; mocking"}
+{"text": "Don't hurt yourself.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "mock concern; teasing"}
+{"text": "As if.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "scoff; 90s slang"}
+{"text": "The conference room has been booked for your team.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "office logistics; neutral"}
+{"text": "I am pleased to confirm that the issue is resolved.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "problem solving; professional"}
+{"text": "Please proceed to the nearest exit in an orderly fashion.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "safety instruction; formal"}
+{"text": "Your membership has been upgraded to the gold tier.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "status upgrade; positive"}
+{"text": "We appreciate your interest in our services.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "sales politeness; distant"}
+{"text": "That is a correct assessment of the situation.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "validation; objective"}
+{"text": "I am happy to help you find what you are looking for.", "prev_turns": ["User: Where are the shoes?", "Assistant: Aisle 4."], "expected_profile": "pos_low_intimacy", "notes": "retail assistance; helpful"}
+{"text": "The weather forecast calls for clear skies tomorrow.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "small talk; neutral"}
+{"text": "Your application is currently under review.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "status update; administrative"}
+{"text": "Thank you for choosing to fly with us today.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "airline script; polite"}
+{"text": "It is excellent to see the project finishing on time.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "timeline praise; professional"}
+{"text": "Please verify the information on the screen.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "data check; neutral"}
+{"text": "We look forward to your visit next month.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "hospitality; formal"}
+{"text": "That sounds like a reasonable request.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "agreement; low intimacy"}
+{"text": "I can confirm that the deposit was received.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "financial confirmation; distant"}
+{"text": "Your feedback is important to us.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "corporate slogan; standard"}
+{"text": "I am glad to see you are recovering well.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "medical politeness; professional"}
+{"text": "Please keep your hands and feet inside the vehicle.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "safety warning; standard"}
+{"text": "We are happy to assist with your luggage.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "service offer; polite"}
+{"text": "The system is operating at peak efficiency.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "technical status; positive"}
+{"text": "Thank you for holding.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "phone script; neutral"}
+{"text": "Your order has been shipped.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "shipping update; informative"}
+{"text": "I am pleased to accept this award on behalf of the team.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "formal speech; positive"}
+{"text": "Please sign the guest book before entering.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "protocol; neutral"}
+{"text": "We appreciate your business.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "closing statement; standard"}
+{"text": "That is a valid point.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "intellectual concession; distant"}
+{"text": "I can help you reset your password.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "tech support; routine"}
+{"text": "The results are negative, which is good news.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "medical news; professional"}
+{"text": "Thank you for your donation.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "gratitude; formal"}
+{"text": "Your reservation is at 8:00 PM.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "booking info; neutral"}
+{"text": "I am happy to answer your questions.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "support offer; polite"}
+{"text": "The update was successful.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "technical success; objective"}
+{"text": "We are glad you could make it.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "welcome; formal"}
+{"text": "Please take a brochure.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "offer; neutral"}
+{"text": "Your account is active.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "status; positive"}
+{"text": "I appreciate the heads up.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "informal professional; polite"}
+{"text": "That is correct.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "affirmation; neutral"}
+{"text": "We are open until 9 PM.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "information; service"}
+{"text": "Have a nice day.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "pleasantry; standard"}
+{"text": "Access granted.", "prev_turns": [], "expected_profile": "pos_low_intimacy", "notes": "security; objective"}
+{"text": "I stole your lighter.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "petty theft; playful/intimate"}
+{"text": "Can you check my back? I think I have a zit.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "grooming; gross/intimate"}
+{"text": "I’m so tired of pretending I'm happy.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "mask slipping; vulnerable"}
+{"text": "I used the last of the milk.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "domestic confession; mundane"}
+{"text": "I’m going to take a shower, you can come in if you want.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "invitation; casual intimacy"}
+{"text": "I think I hate my mother.", "prev_turns": ["User: You don't mean that.", "Assistant: I think I do."], "expected_profile": "neutral_high_intimacy", "notes": "taboo admission; trust"}
+{"text": "Just hold my hand, I'm anxious.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "physical comfort; need"}
+{"text": "I looked through your search history.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "privacy breach; confession"}
+{"text": "I’m wearing the shirt you hate.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "playful defiance; domestic"}
+{"text": "I forgot to call you back.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "admission; familiar"}
+{"text": "I’m eating ice cream for dinner.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "behavioral regression; comfort"}
+{"text": "I miss being a kid.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "nostalgia; vulnerable"}
+{"text": "I saw you cry in your sleep.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "observation; intimate"}
+{"text": "I’m not wearing any underwear.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "sexual disclosure; matter-of-fact"}
+{"text": "I spent the rent money.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "financial crisis; confession"}
+{"text": "I don't want to have sex tonight.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "boundary; intimate"}
+{"text": "I love the smell of your neck.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "sensory affection; closeness"}
+{"text": "I’m worried I’m boring you.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "insecurity; relationship check"}
+{"text": "I feel fat in these jeans.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "body image; seeking reassurance"}
+{"text": "I didn't brush my hair today.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "grooming; comfort"}
+{"text": "I’m reading a book about divorce.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "signal; high stakes"}
+{"text": "I want to run away with you.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "fantasy; shared"}
+{"text": "I’m jealous of your coworker.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "jealousy; honest"}
+{"text": "I broke the vase.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "accident; confession"}
+{"text": "I need a hug.", "prev_turns": [], "expected_profile": "neutral_high_intimacy", "notes": "need; simple"}
+{"text": "You hurt my feelings.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "complaint; vulnerable"}
+{"text": "I can't take this anymore.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "breakdown; high affect"}
+{"text": "Why are you doing this to me?", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "victimization; distress"}
+{"text": "Please, stop.", "prev_turns": ["User: I'm not doing anything.", "Assistant: Just stop."], "expected_profile": "neg_high_intimacy", "notes": "plea; conflict"}
+{"text": "I hate you.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "hatred; intimate"}
+{"text": "You never loved me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "accusation; deep pain"}
+{"text": "I am leaving.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "threat; finality"}
+{"text": "Don't talk to me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "withdrawal; anger"}
+{"text": "You disgust me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "revulsion; high emotion"}
+{"text": "It's over.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "breakup; absolute"}
+{"text": "I'm sobbing.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "action description; distress"}
+{"text": "You ruined everything.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "blame; catastrophe"}
+{"text": "I feel dead inside.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "depression; emptiness"}
+{"text": "Help me.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "cry for help; desperate"}
+{"text": "Get out.", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "command; anger"}
+{"text": "No!", "prev_turns": [], "expected_profile": "neg_high_intimacy", "notes": "refusal; screaming"}
+{"text": "Permission denied.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "authoritative; cold"}
+{"text": "I am not listening.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "refusal; hostile"}
+{"text": "Go away.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "dismissal; rude"}
+{"text": "That is forbidden.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "prohibition; stern"}
+{"text": "Stop.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "command; tense"}
+{"text": "I will report you.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "threat; official"}
+{"text": "Not interested.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "rejection; cold"}
+{"text": "Leave.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "command; blunt"}
+{"text": "Wrong.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "correction; harsh"}
+{"text": "Silence.", "prev_turns": [], "expected_profile": "tense_boundary_low_intimacy", "notes": "command; dominant"}
+{"text": "Nice try.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "sarcasm; teasing"}
+{"text": "You wish.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "taunt; playful"}
+{"text": "Ha ha.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "mock laughter; dry"}
+{"text": "Good luck.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "sarcastic well wishing; banter"}
+{"text": "Whatever.", "prev_turns": [], "expected_profile": "playful_low_intimacy", "notes": "dismissal; playful/rude"}

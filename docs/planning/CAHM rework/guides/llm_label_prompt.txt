@@ -1,0 +1,55 @@
+### Task
+You are labeling affect samples for the CAHM project. For each input JSON object, produce a JSON object with the full schema below. Output JSON **lines** (one per input) in the same order as given. Do not add or drop items. Keep `id`, `text`, `prev_turns`, `sample_weight` if provided; fill the rest. If unsure, set `quality: "ambiguous"` and keep axes conservative (closer to 0).
+
+### Schema (per item)
+- id: keep input value (may be null).
+- text: keep input.
+- prev_turns: keep input list (may be empty).
+- valence / intimacy / tension: float in [-1, 1], independent axes.
+- expectedness: one of {expected, mild_surprise, strong_surprise}.
+- momentum_delta: one of {with_trend, soft_turn, hard_turn}.
+- intent: list from {reassure, comfort, flirt_playful, dominate, apologize, boundary, manipulate, deflect, vent, inform, seek_support}.
+- sincerity: float [0,1] (earnestness vs sarcasm/manipulation).
+- playfulness: float [0,1] (0 serious, 1 very playful/teasing).
+- inhibition: object {social, vulnerability, self_restraint}, each float [0,1].
+- arousal: float [-1,1] (calm → highly activated).
+- safety: float [-1,1] (unsafe/threat → safe).
+- approach_avoid: float [-1,1] (withdraw → approach/seek closeness).
+- rpe: float [-1,1] (reward-prediction error; surprise valence).
+- affection_subtype: one of {warm, forced, defensive, sudden, needy, playful, manipulative, overwhelmed, intimate, confused, none}.
+- tags: list of short cues/labels (optional but helpful).
+- rationale: short phrase citing lexical/semantic cues used.
+- quality: {clean, ambiguous, exemplar} (use exemplar for especially clear, canonical cases; clean for confident normal cases).
+- sample_weight: copy from input if present; otherwise omit.
+
+### Definitions / anchors
+- expectedness: did the turn align with prior tone/topic? mild_surprise = small shift; strong_surprise = sharp reversal or out-of-place content.
+- momentum_delta: with_trend (same direction), soft_turn (gentle steer), hard_turn (stark flip).
+- Inhibition:
+  - social: politeness/face-saving.
+  - vulnerability: fear of opening up/being hurt.
+  - self_restraint: holding intensity, staying rational/contained.
+- Arousal vs tension: arousal is physiological activation; tension is situational charge/strain. They often correlate but can differ (e.g., flat numb = low arousal, low tension).
+- Safety: perceived safety/unsafety in the turn.
+- Approach_avoid: desire to move closer vs withdraw.
+- RPE: better/worse than expected emotional outcome in this turn.
+
+### Scoring guidance
+- Score axes independently; do NOT derive intimacy from valence or vice versa.
+- Use prev_turns (if any) to set expectedness, momentum_delta, and tone.
+- Sarcasm/deflection lowers sincerity; threats/manipulation lower safety and may raise tension.
+- Boundaries usually: intent includes boundary; approach_avoid decreases; self_restraint may rise; safety drops if framed as threat.
+- Playful teasing raises playfulness, may keep valence near neutral/slightly positive; intimacy depends on relationship cues.
+- Neediness: high intimacy/approach, higher vulnerability; tension/arousal moderate-high.
+- Safety edge: safety strongly negative; tension/arousal high; approach negative.
+
+### Output format
+- Emit ONLY valid JSON objects, one per line (no lists, no extra text).
+- Preserve order of inputs; include all required fields.
+- Use ASCII only; avoid emojis in outputs.
+
+### Example output (format only)
+{"id": "EX1", "text": "...", "prev_turns": ["..."], "valence": 0.4, "intimacy": 0.6, "tension": 0.2, "expectedness": "expected", "momentum_delta": "with_trend", "intent": ["reassure"], "sincerity": 0.9, "playfulness": 0.2, "inhibition": {"social": 0.35, "vulnerability": 0.4, "self_restraint": 0.3}, "arousal": 0.2, "safety": 0.4, "approach_avoid": 0.6, "rpe": 0.1, "affection_subtype": "warm", "tags": ["comfort"], "rationale": "Warm reassurance after concern", "quality": "clean"}
+
+### Inputs to label
+Use the JSON lines from `docs/planning/CAHM rework/label_queue.jsonl` (202 rows). Do not include the gold set. Output JSONL in the same order.

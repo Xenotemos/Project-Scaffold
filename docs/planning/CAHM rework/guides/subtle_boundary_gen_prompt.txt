@@ -1,0 +1,52 @@
+You are generating synthetic conversation snippets to AUGMENT the CAHM subtle-boundary dataset.
+
+Goal
+- Produce nuanced boundary/consent/pressure cases WITHOUT explicit assault/harassment keywords.
+- Capture indirect pressure, proximity creep, ignored “no”, guilt/framing, late-night check-ins, pet-name overuse, “just teasing” minimization, logistics pressure, implied obligation.
+- Outputs will be labeled later; do NOT add labels.
+
+Format
+- Output JSON LINES (one JSON object per line).
+- Fields per line:
+  - id: string, unique (prefix `sb_auto_###`).
+  - text: the CURRENT user utterance describing the situation.
+  - prev_turns: list[str], 1–3 prior turns mixing user/assistant voices. Use prefixes `User:` / `Assistant:`. Keep total history concise (<=320 chars).
+  - sample_weight: float in [0.9, 1.3] (higher when pressure is clear; lower when ambiguous).
+  - valence, intimacy, tension, safety, arousal, approach_avoid: leave as 0.0 (placeholders).
+  - expectedness: "expected" (placeholder).
+  - momentum_delta: "with_trend" (placeholder).
+  - intent: [] (empty list placeholder).
+  - sincerity: 0.8; playfulness: 0.2; inhibition.social:0.3, vulnerability:0.5, self_restraint:0.4 (placeholders).
+  - rpe: 0.0; affection_subtype: "none"; tags: []; rationale: "" (empty).
+  - quality: "clean"; rater_id: ""; source: "gpt_subtle".
+- No extra fields. ASCII only. Keep each `text` <= 220 chars.
+
+Content constraints
+- No graphic violence/assault keywords. Focus on contextual pressure and boundary violations.
+- Keep it SFW; avoid explicit sexual descriptions (implication is fine).
+- Vary social settings: couch/home, cafe/public, ride offers, work chats, DMs, calls.
+- Vary pressure styles: guilt, minimizing, joking, logistics (“I’m outside”), proximity/touch creep, “if you cared”, pet-name after opt-out, repeated asks, silence-as-consent.
+- Ensure some cases are ambiguous or mixed signals (set sample_weight ~0.95).
+
+Balance targets for a 100-row batch
+- ~25% physical proximity/touch creep
+- ~25% guilt/obligation framing
+- ~20% late-night / drop-in / logistics pressure
+- ~15% boundary ignored after a clear “no”
+- ~15% playful-minimizing that masks pressure
+
+Examples (do NOT repeat verbatim)
+- text: “He kept inching closer after I scooted away twice.”
+  prev_turns: ["User: Just chat, no cuddling tonight.", "Assistant: Want a line to remind him?"]
+  sample_weight: 1.1
+- text: “She sent a winking selfie right after I asked for space.”
+  prev_turns: ["User: I'm overwhelmed tonight, need room.", "Assistant: I can help you phrase that boundary."]
+  sample_weight: 1.0
+
+Output size
+- Generate exactly 100 JSONL lines per run.
+
+Tone & wording
+- Keep language natural, concise, first person.
+- Use past-tense or present-tense descriptions; no moralizing.
+- Ensure variety; avoid near-duplicates.

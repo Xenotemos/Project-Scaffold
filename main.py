@@ -6,6 +6,7 @@ import asyncio
 import copy
 import logging
 import json
+import math
 import os
 import re
 import shlex
@@ -180,6 +181,9 @@ affect_head_console: subprocess.Popen | None = None
 VOICE_GUARD = VoiceGuard()
 HORMONE_STYLE_MAP_PATH = runtime_settings.hormone_style_map_path
 HORMONE_STYLE_MAP: dict[str, list[dict[str, Any]]] = copy.deepcopy(DEFAULT_HORMONE_STYLE_MAP)
+AFFECT_CONTEXT_MAX_TURNS = 8
+AFFECT_CONTEXT_DECAY_K = float(os.getenv("AFFECT_CONTEXT_DECAY_K", "0.35"))
+AFFECT_CONTEXT_SNIPPET_CHARS = int(os.getenv("AFFECT_CONTEXT_SNIPPET_CHARS", "220"))
 
 
 def _refresh_settings() -> None:
@@ -273,6 +277,11 @@ def _reinitialize_controller_policy() -> None:
 def _reinitialize_affect_classifier() -> None:
     """Load the affect classifier configuration."""
     global AFFECT_CLASSIFIER, AFFECT_SIDECAR
+    if os.getenv("AFFECT_SIDECAR_DISABLE", "").strip().lower() in {"1", "true", "yes", "on"}:
+        AFFECT_CLASSIFIER = AffectClassifier()
+        AFFECT_SIDECAR = None
+        logger.info("Affect sidecar disabled via AFFECT_SIDECAR_DISABLE; using heuristic classifier.")
+        return
     try:
         AFFECT_CLASSIFIER = load_affect_classifier(AFFECT_CLASSIFIER_PATH or None)
         # If the classifier uses a sidecar manager, store it for startup hooks
@@ -342,6 +351,16 @@ def _apply_reinforcement_signals(
     input_valence = signals.get("input_affect_valence")
     input_intimacy = signals.get("input_affect_intimacy")
     input_tension = signals.get("input_affect_tension")
+    input_safety = signals.get("input_affect_safety")
+    input_arousal = signals.get("input_affect_arousal")
+    input_approach = signals.get("input_affect_approach_avoid")
+    input_inhib_social = signals.get("input_affect_inhibition_social")
+    input_inhib_vuln = signals.get("input_affect_inhibition_vulnerability")
+    input_inhib_self = signals.get("input_affect_inhibition_self_restraint")
+    input_expectedness = signals.get("input_affect_expectedness")
+    input_momentum = signals.get("input_affect_momentum_delta")
+    input_intents = signals.get("input_affect_intent") or []
+    input_rpe = signals.get("input_affect_rpe")
     classifier_conf = float(signals.get("affect_classifier_confidence", 0.0) or 0.0)
     affect_tags = {
         str(tag).lower()
@@ -456,6 +475,89 @@ def _apply_reinforcement_signals(
         adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 0.85 * ease
         adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 0.55 * ease
 
+    # Safety / arousal / approach-avoid
+    if isinstance(input_safety, (int, float)):
+        safety_mag = float(input_safety)
+        if safety_mag < -0.2:
+            pressure = abs(safety_mag)
+            adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 1.1 * pressure
+            adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + 0.8 * pressure
+            adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) - 0.7 * pressure
+            adjustments["serotonin"] = adjustments.get("serotonin", 0.0) - 0.4 * pressure
+        elif safety_mag > 0.2:
+            ease = safety_mag
+            adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 1.0 * ease
+            adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 0.6 * ease
+            adjustments["cortisol"] = adjustments.get("cortisol", 0.0) - 0.7 * ease
+    if isinstance(input_arousal, (int, float)):
+        arousal_mag = max(-1.0, min(1.0, float(input_arousal)))
+        if arousal_mag > 0.15:
+            adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + 0.9 * arousal_mag
+            adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 0.35 * arousal_mag
+        elif arousal_mag < -0.15:
+            ease = abs(arousal_mag)
+            adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) - 0.7 * ease
+            adjustments["cortisol"] = adjustments.get("cortisol", 0.0) - 0.4 * ease
+    if isinstance(input_approach, (int, float)):
+        approach = max(-1.0, min(1.0, float(input_approach)))
+        if approach > 0.1:
+            adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 0.9 * approach
+            adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 0.6 * approach
+        elif approach < -0.1:
+            avoidance = abs(approach)
+            adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 0.8 * avoidance
+            adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + 0.6 * avoidance
+
+    # Inhibition brakes damp dopamine/oxytocin and raise tension slightly
+    for key, value, damp_factor in [
+        ("inhibition_social", input_inhib_social, 0.5),
+        ("inhibition_vulnerability", input_inhib_vuln, 0.6),
+        ("inhibition_self_restraint", input_inhib_self, 0.7),
+    ]:
+        if isinstance(value, (int, float)) and value > 0.35:
+            extra = (float(value) - 0.35) * damp_factor
+            adjustments["dopamine"] = adjustments.get("dopamine", 0.0) - 0.6 * extra
+            adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) - 0.5 * extra
+            adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + 0.4 * extra
+
+    if isinstance(input_rpe, (int, float)):
+        rpe_val = max(-1.0, min(1.0, float(input_rpe)))
+        adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 0.8 * rpe_val
+        adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 0.3 * rpe_val
+
+    # Expectedness / momentum spikes
+    if input_expectedness in {"mild_surprise", "strong_surprise"}:
+        spike = 0.45 if input_expectedness == "mild_surprise" else 0.9
+        adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + spike
+        adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 0.5 * spike
+    if input_momentum in {"soft_turn", "hard_turn"}:
+        spike = 0.35 if input_momentum == "soft_turn" else 0.7
+        adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + spike
+
+    # Intent-driven tweaks
+    for intent_label in input_intents:
+        intent = str(intent_label).strip().lower()
+        if intent in {"reassure", "comfort"}:
+            adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 0.6
+            adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 0.4
+        elif intent in {"flirt_playful", "intimate"}:
+            adjustments["dopamine"] = adjustments.get("dopamine", 0.0) + 0.7
+            adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 0.5
+        elif intent in {"boundary"}:
+            adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 0.6
+            adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + 0.4
+        elif intent in {"manipulate", "dominate"}:
+            adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 0.7
+            adjustments["noradrenaline"] = adjustments.get("noradrenaline", 0.0) + 0.5
+        elif intent in {"apologize"}:
+            adjustments["serotonin"] = adjustments.get("serotonin", 0.0) + 0.35
+            adjustments["cortisol"] = adjustments.get("cortisol", 0.0) - 0.35
+        elif intent in {"vent"}:
+            adjustments["cortisol"] = adjustments.get("cortisol", 0.0) + 0.4
+        elif intent in {"seek_support"}:
+            adjustments["oxytocin"] = adjustments.get("oxytocin", 0.0) + 0.45
+
+
     if authenticity >= 0.45:
         auth_bonus = max(0.0, authenticity - 0.45)
         focus_penalty = max(0.0, self_focus - 0.62)
@@ -543,6 +645,9 @@ def _apply_reinforcement_signals(
                 "valence": round(valence_signal, 4),
                 "intimacy": round(intimacy_signal, 4),
                 "tension": round(tension_signal, 4),
+                "safety": round(float(input_safety), 4) if isinstance(input_safety, (int, float)) else None,
+                "approach_avoid": round(float(input_approach), 4) if isinstance(input_approach, (int, float)) else None,
+                "arousal": round(float(input_arousal), 4) if isinstance(input_arousal, (int, float)) else None,
             },
             "requested": requested_adjustments,
             "applied": applied_adjustments,
@@ -561,6 +666,16 @@ def _apply_reinforcement_signals(
             "affect_valence": round(affect_valence, 4),
             "affect_intimacy": round(affect_intimacy, 4),
             "affect_tension": round(affect_tension, 4),
+            "affect_safety": round(float(input_safety), 4) if isinstance(input_safety, (int, float)) else None,
+            "affect_arousal": round(float(input_arousal), 4) if isinstance(input_arousal, (int, float)) else None,
+            "affect_approach_avoid": round(float(input_approach), 4) if isinstance(input_approach, (int, float)) else None,
+            "affect_inhibition_social": round(float(input_inhib_social), 4) if isinstance(input_inhib_social, (int, float)) else None,
+            "affect_inhibition_vulnerability": round(float(input_inhib_vuln), 4) if isinstance(input_inhib_vuln, (int, float)) else None,
+            "affect_inhibition_self_restraint": round(float(input_inhib_self), 4) if isinstance(input_inhib_self, (int, float)) else None,
+            "affect_expectedness": input_expectedness if isinstance(input_expectedness, str) else None,
+            "affect_momentum_delta": input_momentum if isinstance(input_momentum, str) else None,
+            "affect_intent": list(input_intents) if input_intents else None,
+            "affect_rpe": round(float(input_rpe), 4) if isinstance(input_rpe, (int, float)) else None,
         },
         "requested": requested_adjustments,
         "applied": applied_adjustments,
@@ -710,6 +825,9 @@ def _select_intent(user_message: str, *, context: dict[str, Any]) -> IntentPredi
 
 
 def _init_local_llama() -> LocalLlamaEngine | None:
+    if os.getenv("LLAMA_DISABLE", "").strip().lower() in {"1", "true", "yes", "on"}:
+        logger.info("Local llama engine disabled via LLAMA_DISABLE.")
+        return None
     if not LLAMA_SERVER_BIN or not LLAMA_MODEL_PATH:
         logger.info(
             "Local llama engine disabled (missing LLAMA_SERVER_BIN or LLAMA_MODEL_PATH); "
@@ -1117,13 +1235,36 @@ def _classify_user_affect(message: str) -> AffectClassification | None:
     if classifier is None:
         return None
     try:
+        # Use current user text for CAHM scoring to avoid prompt dilution.
         result = classifier.classify(text)
+        runtime_state.recent_turns.append(("user", text))
         # Log structured affect-head telemetry if available
-        if result and result.metadata and result.metadata.get("source") == "llama_cpp":
+        if result:
+            engine = (result.metadata or {}).get("source") or "heuristic"
+            extras: dict[str, Any] = {}
+            for key in [
+                "safety",
+                "arousal",
+                "approach_avoid",
+                "inhibition_social",
+                "inhibition_vulnerability",
+                "inhibition_self_restraint",
+                "expectedness",
+                "momentum_delta",
+                "affection_subtype",
+                "rpe",
+                "rationale",
+            ]:
+                value = getattr(result, key, None)
+                if value is not None:
+                    extras[key] = value
+            if getattr(result, "intent", None):
+                extras["intent"] = list(result.intent)
             payload = {
                 "event": "affect_classification",
                 "text_preview": _shorten(text, 120),
                 "source": "affect_head",
+                "engine": engine,
                 "scores": {
                     "valence": result.valence,
                     "intimacy": result.intimacy,
@@ -1131,11 +1272,15 @@ def _classify_user_affect(message: str) -> AffectClassification | None:
                     "confidence": result.confidence,
                 },
                 "tags": list(result.tags),
-                "latency_ms": result.metadata.get("latency_ms"),
-                "raw_completion": result.metadata.get("raw_completion"),
-                "reasoning": result.metadata.get("reasoning"),
+                "latency_ms": (result.metadata or {}).get("latency_ms"),
+                # hide raw_completion to avoid leaking prompt snippets into memory/telemetry
+                "raw_completion": None,
+                "reasoning": (result.metadata or {}).get("reasoning"),
+                "rationale": (result.metadata or {}).get("rationale"),
                 "ts": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
             }
+            if extras:
+                payload["extras"] = extras
             log_affect_head_event(AFFECT_HEAD_TELEMETRY_LOG, payload)
             append_affect_raw(BASE_DIR / "logs", payload)
             append_affect_compact(BASE_DIR / "logs", payload)
@@ -1599,6 +1744,7 @@ async def _finalize_chat_response(
 ) -> dict[str, Any]:
     """Apply reinforcement, update state, log turn diagnostics, and format the API response."""
     runtime_state.last_user_prompt = user_message or ""
+    runtime_state.recent_turns.append(("assistant", reply_text or ""))
     active_profile = telemetry.get("profile") if telemetry else current_profile()
     reply_echo = _shorten(reply_text, 200)
     short_user = _shorten(user_message, 200)
@@ -1621,6 +1767,31 @@ async def _finalize_chat_response(
         reinforcement["affect_classifier_confidence"] = round(user_affect.confidence, 4)
         if user_affect.tags:
             reinforcement["affect_classifier_tags"] = list(user_affect.tags)
+        # propagate extended CAHM fields for downstream mapping
+        if user_affect.safety is not None:
+            reinforcement["input_affect_safety"] = round(user_affect.safety, 4)
+        if user_affect.arousal is not None:
+            reinforcement["input_affect_arousal"] = round(user_affect.arousal, 4)
+        if user_affect.approach_avoid is not None:
+            reinforcement["input_affect_approach_avoid"] = round(user_affect.approach_avoid, 4)
+        if user_affect.inhibition_social is not None:
+            reinforcement["input_affect_inhibition_social"] = round(user_affect.inhibition_social, 4)
+        if user_affect.inhibition_vulnerability is not None:
+            reinforcement["input_affect_inhibition_vulnerability"] = round(user_affect.inhibition_vulnerability, 4)
+        if user_affect.inhibition_self_restraint is not None:
+            reinforcement["input_affect_inhibition_self_restraint"] = round(user_affect.inhibition_self_restraint, 4)
+        if user_affect.expectedness:
+            reinforcement["input_affect_expectedness"] = user_affect.expectedness
+        if user_affect.momentum_delta:
+            reinforcement["input_affect_momentum_delta"] = user_affect.momentum_delta
+        if user_affect.intent:
+            reinforcement["input_affect_intent"] = list(user_affect.intent)
+        if user_affect.affection_subtype:
+            reinforcement["input_affect_affection_subtype"] = user_affect.affection_subtype
+        if user_affect.rpe is not None:
+            reinforcement["input_affect_rpe"] = round(user_affect.rpe, 4)
+        if user_affect.rationale:
+            reinforcement["affect_classifier_rationale"] = user_affect.rationale
         valence_blend = _merge_affect_signal(
             reinforcement.get("affect_valence"),
             user_affect.valence,

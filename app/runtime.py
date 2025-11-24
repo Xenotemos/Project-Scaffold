@@ -15,6 +15,7 @@ class RuntimeState:
     """Mutable state shared across chat/controller cycles."""
 
     history_window: int = 40
+    recent_turns_window: int = 12
     session_counter: int = 1
     metric_sample_counter: int = 0
     last_sampling_snapshot: Dict[str, Any] = field(default_factory=dict)
@@ -45,6 +46,7 @@ class RuntimeState:
     affect_tension_history: Deque[float] = field(init=False)
     last_affect_head_snapshot: Dict[str, Any] | None = None
     reinforcement_tracker: ReinforcementTracker = field(default_factory=ReinforcementTracker)
+    recent_turns: Deque[tuple[str, str]] = field(init=False)
 
     def __post_init__(self) -> None:
         self._init_histories()
@@ -56,6 +58,7 @@ class RuntimeState:
         self.affect_valence_history = deque(maxlen=self.history_window)
         self.affect_intimacy_history = deque(maxlen=self.history_window)
         self.affect_tension_history = deque(maxlen=self.history_window)
+        self.recent_turns = deque(maxlen=self.recent_turns_window)
 
     def reset_controller(self) -> None:
         self.last_controller_result = None

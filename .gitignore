@@ -15,6 +15,7 @@ pip-wheel-metadata/
 # Virtual environments
 .venv/
 .venv-win/
+.venv-dml/
 venv/
 ENV/
 env/
@@ -28,6 +29,11 @@ codex/.codex/
 
 # Third-party binaries
 third_party/llama.cpp/
+
+# Large local artifacts (keep out of git)
+affect_lora_guardrail_v4_epoch3_merged-Q8_0.gguf
+fine_tune/0.136\ MSE\ (3\ epoch)/
+fine_tune/0.174\ MSE\ (1\ epoch)/
 
 # Test and cache
 .pytest_cache/

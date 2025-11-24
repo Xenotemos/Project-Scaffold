@@ -75,6 +75,8 @@ class AffectSidecarManager:
         extra_args = self.config.get("extra_args") or []
         if isinstance(extra_args, str):
             extra_args = shlex.split(extra_args)
+        # drop unsupported flash-attn flags to avoid startup failure on non-flash builds
+        extra_args = [arg for arg in extra_args if "flash-attn" not in str(arg)]
         cmd = [
             str(binary),
             "--model",
@@ -95,11 +97,18 @@ class AffectSidecarManager:
             creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(
                 subprocess, "CREATE_NEW_PROCESS_GROUP", 0
             )
+        # Scrub environment vars that may inject unsupported flags (e.g., LLAMA_ARG="--flash-attn=auto")
+        env = os.environ.copy()
+        for key in ["LLAMA_ARG", "LLAMA_ARGS", "LLAMA_SERVER_ARGS"]:
+            env.pop(key, None)
+        # Force flash-attn off to avoid unsupported flag injection
+        env["LLAMA_ARG_FLASH_ATTN"] = "off"
         self._process = subprocess.Popen(
             cmd,
             stdout=stdout,
             stderr=stderr,
             creationflags=creation_flags,
+            env=env,
         )
 
     async def _wait_ready(self, timeout: float | None = None) -> None:
